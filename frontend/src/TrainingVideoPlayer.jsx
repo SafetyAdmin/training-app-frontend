@@ -1,6 +1,6 @@
 // frontend/src/TrainingVideoPlayer.jsx
-import React, { useRef, useState, useEffect } from 'react';
-import ReactPlayer from 'react-player'; // เรียกใช้ตัวเล่นอเนกประสงค์
+import React, { useState, useEffect } from 'react';
+import ReactPlayer from 'react-player'; // ต้อง import ตัวนี้
 
 const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -10,7 +10,8 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   // ฟังก์ชันส่งข้อมูลไปหลังบ้าน
   const saveProgressToBackend = async (currentTime, totalDuration) => {
     try {
-      await fetch('hhttps://training-api-pvak.onrender.com/', { // <--- อย่าลืมเช็คลิ้งก์ API ของคุณตรงนี้นะครับ
+      // *** อย่าลืมเช็คลิ้งก์ API ให้ตรงกับ Backend ของคุณ (Render หรือ Localhost) ***
+      await fetch('https://training-api-pvak.onrender.com/', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

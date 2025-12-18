@@ -8,7 +8,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   // ฟังก์ชันส่งข้อมูลไปหลังบ้าน
   const saveProgressToBackend = async (currentTime, duration) => {
     try {
-      await fetch('http://localhost:3001/api/save-progress', {
+      await fetch('https://training-api-pvak.onrender.com/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

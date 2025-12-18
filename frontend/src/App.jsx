@@ -13,7 +13,7 @@ function App() {
       id: "SF001", 
       title: "🔥 ความปลอดภัยในโรงงาน", 
       // ใส่ชื่อไฟล์ที่คุณเอาไปวางใน public/videos/
-      url: "/videos/safety.mp4",  
+      url: "https://www.youtube.com/watch?v=VZoyfQAg9ag",  
       duration: "10 นาที" 
     },
     { 

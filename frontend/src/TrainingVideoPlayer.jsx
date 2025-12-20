@@ -8,10 +8,10 @@ const TrainingVideoPlayer = ({
   courseId 
 }) => {
   const [elapsedTime, setElapsedTime] = useState(0); 
-  const [startTime, setStartTime] = useState(0); // เวลาเริ่มต้นของวิดีโอ
-  const [isCompleted, setIsCompleted] = useState(false); // สถานะเรียนจบหรือยัง
+  const [startTime, setStartTime] = useState(0); 
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // เพิ่มสถานะกำลังโหลด
 
-  // 1. ดึง ID วิดีโอจาก YouTube URL
   const getYouTubeId = (url) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -21,28 +21,40 @@ const TrainingVideoPlayer = ({
 
   const videoId = getYouTubeId(videoUrl);
 
-  // 2. โหลดข้อมูลเก่าจากเครื่อง (Local Storage) เมื่อเปิดหน้าเว็บ
+  // 1. ✅ ดึงข้อมูลจาก SERVER (Cloud) แทน LocalStorage
   useEffect(() => {
-    const savedData = localStorage.getItem(`progress_${employeeId}_${courseId}`);
-    if (savedData) {
-      const { time, completed } = JSON.parse(savedData);
-      setStartTime(time); // ตั้งเวลาเริ่มให้ตรงกับที่ดูค้างไว้
-      setElapsedTime(time);
-      setIsCompleted(completed);
-      console.log('🔄 โหลดข้อมูลเดิม:', time, 'วินาที | จบแล้ว:', completed);
-    }
+    const fetchProgress = async () => {
+      try {
+        // ยิงไปถาม Server ว่าคนนี้เรียนถึงไหนแล้ว
+        const response = await fetch(
+            `https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`
+        );
+        const data = await response.json();
+
+        if (data && data.currentTime > 0) {
+          setStartTime(data.currentTime); // ตั้งเวลาเริ่ม
+          setElapsedTime(data.currentTime);
+          
+          // เช็คว่าเคยเรียนจบหรือยัง (ถ้าดูเกิน 95% ถือว่าจบ)
+          if (data.totalDuration > 0 && data.currentTime >= (data.totalDuration * 0.95)) {
+             setIsCompleted(true);
+          }
+          console.log('☁️ โหลดจาก Cloud:', data.currentTime);
+        }
+      } catch (err) {
+        console.error("โหลดข้อมูลเก่าไม่ได้:", err);
+      } finally {
+        setIsLoading(false); // โหลดเสร็จแล้ว ให้แสดงวิดีโอได้
+      }
+    };
+
+    fetchProgress();
   }, [employeeId, courseId]);
 
-  // 3. ฟังก์ชันบันทึกข้อมูล (ทั้งลงเครื่อง และส่งไปหลังบ้าน)
-  const saveProgress = (currentTime, completed = false) => {
-    // A. บันทึกลงเครื่อง (เพื่อให้กลับมาดูต่อได้)
-    localStorage.setItem(`progress_${employeeId}_${courseId}`, JSON.stringify({
-      time: currentTime,
-      completed: completed
-    }));
-
-    // B. ส่งไปหลังบ้าน (ให้ Admin ดู)
-    fetch('https://training-api-pvak.onrender.com/api/save-progress', { 
+  // 2. ฟังก์ชันบันทึก (ส่งไป Server เหมือนเดิม)
+  const saveProgressToBackend = async (currentTime) => {
+    try {
+      await fetch('https://training-api-pvak.onrender.com/api/save-progress', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -50,36 +62,39 @@ const TrainingVideoPlayer = ({
           employeeName,
           courseId,
           currentTime: currentTime,
-          totalDuration: 600 // สมมติว่าคลิปยาว 10 นาที (ถ้าครบเวลาจะถือว่าผ่าน)
+          totalDuration: 600 // (10 นาที)
         })
-    }).catch(err => console.error("Save Error:", err));
+      });
+    } catch (err) {
+      console.error("Save Error:", err);
+    }
   };
 
-  // 4. ระบบจับเวลา (ทำงานทุก 5 วินาที)
+  // 3. ระบบจับเวลา
   useEffect(() => {
+    if (isLoading) return; // ถ้ากำลังโหลดข้อมูลเก่า อย่าเพิ่งจับเวลา
+
     const interval = setInterval(() => {
       setElapsedTime(prev => {
         const newTime = prev + 5;
         
-        // ถ้าดูเกิน 10 นาที (600 วิ) ให้ถือว่าเรียนจบ
-        let completedStatus = isCompleted;
+        // เช็คว่าจบหรือยัง
         if (newTime >= 600 && !isCompleted) {
-          completedStatus = true;
           setIsCompleted(true);
           alert("🎉 ยินดีด้วย! คุณผ่านการอบรมหลักสูตรนี้แล้ว");
         }
 
-        saveProgress(newTime, completedStatus);
+        saveProgressToBackend(newTime);
         return newTime;
       });
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isCompleted]); // เพิ่ม dependency เพื่อให้สถานะ completed อัปเดตถูกต้อง
+  }, [isLoading, isCompleted]);
 
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #ddd' }}>
-      <div style={{ padding: '15px', background: isCompleted ? '#10b981' : '#2563eb', color: 'white', transition: '0.3s' }}>
+      <div style={{ padding: '15px', background: isCompleted ? '#10b981' : '#2563eb', color: 'white' }}>
         <h3 style={{ margin: 0 }}>
           {isCompleted ? '✅ เรียนจบหลักสูตรแล้ว' : '📺 ห้องเรียนออนไลน์'}
         </h3>
@@ -87,9 +102,14 @@ const TrainingVideoPlayer = ({
       </div>
 
       <div style={{ position: 'relative', paddingTop: '56.25%', background: 'black' }}>
-        {videoId ? (
+        {isLoading ? (
+           // แสดงข้อความระหว่างรอโหลดข้อมูลจาก Cloud
+           <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+             ⏳ กำลังดึงข้อมูลการเรียน...
+           </div>
+        ) : videoId ? (
           <iframe
-            // เพิ่ม ?start=... เพื่อสั่งให้ YouTube เล่นต่อจากวินาทีเดิม
+            // ?start=... คือพระเอกที่ทำให้วิดีโอกระโดดไปจุดเดิม
             src={`https://www.youtube.com/embed/${videoId}?start=${startTime}&autoplay=1`}
             title="YouTube video player"
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
@@ -98,25 +118,17 @@ const TrainingVideoPlayer = ({
             allowFullScreen
           ></iframe>
         ) : (
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-            ❌ ลิ้งก์วิดีโอไม่ถูกต้อง
-          </div>
+          <div style={{ color: 'white' }}>❌ ลิ้งก์วิดีโอไม่ถูกต้อง</div>
         )}
       </div>
 
       <div style={{ padding: '15px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-                <p><strong>ผู้เรียน:</strong> {employeeName} ({employeeId})</p>
-                <p style={{ color: isCompleted ? 'green' : '#666', fontWeight: 'bold' }}>
-                    ⏱️ เวลาที่บันทึกล่าสุด: {elapsedTime} วินาที
-                </p>
-            </div>
-            {isCompleted && <span style={{fontSize: '30px'}}>🏅</span>}
-        </div>
-        
-        <p style={{ fontSize: '12px', color: '#888', marginTop: '10px' }}>
-            * ระบบจะบันทึกเวลาดูคลิปของคุณไว้ในเครื่องนี้ หากปิดแล้วเปิดใหม่ วิดีโอจะเล่นต่อจากเดิม
+        <p><strong>ผู้เรียน:</strong> {employeeName} ({employeeId})</p>
+        <p style={{ color: isCompleted ? 'green' : '#666', fontWeight: 'bold' }}>
+            ⏱️ เวลาที่บันทึกล่าสุด: {elapsedTime} วินาที
+        </p>
+        <p style={{ fontSize: '12px', color: '#f59e0b' }}>
+            ☁️ ระบบซิงค์ข้อมูลออนไลน์: เปลี่ยนเครื่องเรียนก็ต่อที่เดิมได้ทันที
         </p>
       </div>
     </div>

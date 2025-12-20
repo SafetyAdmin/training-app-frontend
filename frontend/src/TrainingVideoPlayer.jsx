@@ -1,151 +1,126 @@
 // frontend/src/TrainingVideoPlayer.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import ReactPlayer from 'react-player';
+import React, { useState, useEffect } from 'react';
 
 const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
-  const playerRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playedSeconds, setPlayedSeconds] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isReady, setIsReady] = useState(false);
-  const [maxWatched, setMaxWatched] = useState(0); 
+  const [startTime, setStartTime] = useState(0);      // เวลาเริ่ม (ดึงจาก Server)
+  const [currentTime, setCurrentTime] = useState(0);  // เวลาปัจจุบัน (จับจากนาฬิกา)
+  const [isLoading, setIsLoading] = useState(true);   // สถานะรอโหลดข้อมูลเก่า
+  const [isCompleted, setIsCompleted] = useState(false);
 
-  // 1. โหลดข้อมูลเดิมจาก Cloud
+  // 1. แปลงลิ้งก์ YouTube เป็น ID
+  const getYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+  const videoId = getYouTubeId(videoUrl);
+
+  // 2. โหลดข้อมูลเก่าจาก Cloud ก่อน (สำคัญมาก! ต้องรอก่อนถึงจะแสดงวิดีโอ)
   useEffect(() => {
-    const loadProgress = async () => {
+    const fetchProgress = async () => {
       try {
         const res = await fetch(`https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`);
         const data = await res.json();
         
         if (data && data.currentTime > 0) {
-          setMaxWatched(data.currentTime);
-          setPlayedSeconds(data.currentTime);
-          console.log('🔄 ต่อที่เดิม:', data.currentTime);
-          
-          if (playerRef.current) {
-            playerRef.current.seekTo(data.currentTime);
-          }
+          setStartTime(data.currentTime); // ตั้งค่าเวลาเริ่มให้วิดีโอ
+          setCurrentTime(data.currentTime);
+          console.log('🔄 พบข้อมูลเดิม เริ่มที่วินาทีที่:', data.currentTime);
         }
-      } catch (err) { console.error(err); }
+      } catch (err) {
+        console.error("โหลดข้อมูลไม่สำเร็จ:", err);
+      } finally {
+        setIsLoading(false); // โหลดเสร็จแล้ว อนุญาตให้แสดงวิดีโอได้
+      }
     };
-    loadProgress();
+    fetchProgress();
   }, [employeeId, courseId]);
 
-  // 2. บันทึกข้อมูล
-  const saveProgress = async (currentTime, totalTime) => {
+  // 3. ระบบจับเวลา & บันทึก (ทำงานแยกกับวิดีโอ)
+  useEffect(() => {
+    if (isLoading) return; // ถ้ารอข้อมูลเก่าอยู่ อย่าเพิ่งนับเวลา
+
+    const interval = setInterval(() => {
+      setCurrentTime(prev => {
+        const newTime = prev + 5; // เพิ่มทีละ 5 วินาที
+        
+        // บันทึกข้อมูลส่งไปหลังบ้าน
+        saveProgressToBackend(newTime);
+        
+        // เช็คว่าจบหรือยัง (สมมติ 10 นาที = 600 วิ)
+        if (newTime >= 600 && !isCompleted) {
+           setIsCompleted(true);
+           alert("🎉 ยินดีด้วย! คุณผ่านการอบรมแล้ว");
+        }
+        return newTime;
+      });
+    }, 5000); // ทำงานทุก 5 วินาที
+
+    return () => clearInterval(interval);
+  }, [isLoading, isCompleted]);
+
+  const saveProgressToBackend = async (time) => {
     try {
-        await fetch('https://training-api-pvak.onrender.com/api/save-progress', { 
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              employeeId,
-              employeeName,
-              courseId,
-              currentTime: currentTime,
-              totalDuration: totalTime
-            })
-        });
+      await fetch('https://training-api-pvak.onrender.com/api/save-progress', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId, employeeName, courseId,
+          currentTime: time,
+          totalDuration: 600
+        })
+      });
     } catch (err) { console.error(err); }
   };
 
-  // 3. ระบบกันโกง (ทำงานเมื่อวิดีโอเล่น)
-  const handleProgress = (state) => {
-    if (!isReady) return;
-    const current = state.playedSeconds;
-
-    // A. ถ้าพยายามข้ามไปไกลกว่าที่เคยดู (เกิน 3 วินาที) -> ดีดกลับ
-    if (current > maxWatched + 3) {
-        playerRef.current.seekTo(maxWatched); // ดีดกลับที่เดิม
-    } else {
-        // B. ถ้าดูปกติ -> อัปเดตเวลาล่าสุด
-        if (current > maxWatched) {
-            setMaxWatched(current);
-            setPlayedSeconds(current);
-        }
-        
-        // บันทึกทุก 5 วินาที
-        if (Math.floor(current) % 5 === 0 && current > 0) {
-             saveProgress(current, duration);
-        }
-    }
-  };
+  // ถ้ากำลังโหลดข้อมูลเก่า ให้ขึ้นรอ... (เพื่อกันไม่ให้วิดีโอเริ่มเล่นที่ 0)
+  if (isLoading) {
+    return <div className="card" style={{padding:'20px', textAlign:'center'}}>⏳ กำลังดึงข้อมูลการเรียนเดิม...</div>;
+  }
 
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #ddd' }}>
-      <div style={{ padding: '15px', background: '#2563eb', color: 'white' }}>
-        <h3 style={{ margin: 0 }}>📺 ห้องเรียนออนไลน์</h3>
+      <div style={{ padding: '15px', background: isCompleted ? '#10b981' : '#2563eb', color: 'white' }}>
+        <h3 style={{ margin: 0 }}>{isCompleted ? '✅ อบรมเสร็จสิ้น' : '📺 ห้องเรียนออนไลน์'}</h3>
         <p style={{ margin: 0, opacity: 0.8 }}>หลักสูตร: {courseId}</p>
       </div>
 
       <div style={{ position: 'relative', paddingTop: '56.25%', background: 'black' }}>
-        {/* เลเยอร์ใสบังหน้าจอ: กันคลิกขวา หรือกดที่ตัววิดีโอโดยตรง */}
-        <div 
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '85%', zIndex: 10, cursor: 'not-allowed' }}
-            onClick={(e) => { e.preventDefault(); alert("🚫 กรุณาใช้ปุ่มเล่น/หยุด ด้านล่าง"); }}
-        ></div>
-
-        <ReactPlayer
-          ref={playerRef}
-          url={videoUrl}
-          width="100%"
-          height="100%"
-          style={{ position: 'absolute', top: 0, left: 0 }}
-          
-          playing={isPlaying} // ควบคุมการเล่นผ่านตัวแปรนี้
-          controls={false}    // ❌ ซ่อนปุ่ม YouTube ทิ้งไปเลย (สำคัญมาก)
-          
-          // ตั้งค่า YouTube เพิ่มเติมเพื่อปิดคีย์บอร์ด
-          config={{
-            youtube: {
-              playerVars: { 
-                controls: 0,     // ซ่อนแถบควบคุม
-                disablekb: 1,    // ปิดคีย์บอร์ด (กันกดลูกศรข้าม)
-                modestbranding: 1,
-                rel: 0,
-                fs: 0            // ปิด Fullscreen (เพื่อบังคับให้ดูในกรอบเรา)
-              }
-            }
-          }}
-
-          onReady={() => setIsReady(true)}
-          onDuration={(d) => setDuration(d)}
-          onProgress={handleProgress}
-          onEnded={() => {
-              saveProgress(duration, duration);
-              alert("🎉 เรียนจบหลักสูตรแล้ว!");
-          }}
-        />
+        {videoId ? (
+          <iframe
+            // สูตรลับ: controls=0 (ซ่อนปุ่ม), disablekb=1 (ปิดคีย์บอร์ด), start=เวลาเดิม
+            src={`https://www.youtube.com/embed/${videoId}?start=${startTime}&autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0`}
+            title="YouTube video player"
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          ></iframe>
+        ) : (
+          <div style={{color:'white', padding:'20px'}}>❌ ไม่พบวิดีโอ</div>
+        )}
       </div>
 
-      {/* 4. สร้างปุ่มควบคุมเอง (Custom Controls) */}
-      <div style={{ padding: '15px', background: '#f8f9fa', borderTop: '1px solid #eee' }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
-            <button 
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="btn"
-                style={{ 
-                    background: isPlaying ? '#ef4444' : '#10b981', 
-                    color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold'
-                }}
-            >
-                {isPlaying ? '⏸️ หยุดชั่วคราว' : '▶️ เล่นวิดีโอ'}
-            </button>
-            
-            <div style={{ flex: 1, background: '#e5e7eb', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
-                <div style={{ 
-                    width: `${(playedSeconds / duration) * 100}%`, 
-                    background: '#3b82f6', height: '100%', transition: 'width 0.5s' 
-                }}></div>
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>
-                {Math.floor(playedSeconds)} / {Math.floor(duration)} วินาที
-            </span>
-        </div>
-
+      <div style={{ padding: '15px' }}>
         <p><strong>ผู้เรียน:</strong> {employeeName}</p>
-        <p style={{ color: '#d97706', fontSize: '12px', margin: 0 }}>
-            🔒 <strong>Anti-Skip Active:</strong> ระบบปิดแถบควบคุมเพื่อป้องกันการกดข้าม
+        
+        {/* หลอดแสดงความคืบหน้า (สร้างเอง เพราะใน YouTube เราซ่อนไปแล้ว) */}
+        <div style={{ background: '#e5e7eb', height: '10px', borderRadius: '5px', marginTop: '10px', overflow:'hidden' }}>
+            <div style={{ width: `${(currentTime / 600) * 100}%`, background: '#2563eb', height: '100%', transition: 'width 0.5s' }}></div>
+        </div>
+        <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+            ⏱️ เวลาที่เรียน: {currentTime} / 600 วินาที
         </p>
+
+        <div style={{ background: '#fff3cd', color: '#856404', padding: '10px', borderRadius: '5px', fontSize: '13px', marginTop: '15px' }}>
+            🔒 <strong>ระบบล็อกการเรียน:</strong>
+            <ul style={{margin: '5px 0 0 20px', padding:0}}>
+                <li>แถบควบคุมถูกซ่อนเพื่อป้องกันการกดข้าม</li>
+                <li>คลิกที่หน้าจอวิดีโอเพื่อ <strong>เล่น / หยุด</strong></li>
+                <li>หากปิดไปแล้วกลับมาใหม่ วิดีโอจะเล่นต่อจากเดิมอัตโนมัติ</li>
+            </ul>
+        </div>
       </div>
     </div>
   );

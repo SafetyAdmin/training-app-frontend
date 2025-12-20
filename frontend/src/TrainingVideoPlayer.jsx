@@ -6,14 +6,15 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   const playerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
-  const [maxWatched, setMaxWatched] = useState(0); // จำเวลาสูงสุดที่ดูถึง
+  const [maxWatched, setMaxWatched] = useState(0); // จำเวลาที่ดูไกลสุด
 
-  // 1. โหลดข้อมูลเดิม (ถ้ามี)
+  // 1. โหลดข้อมูลเดิมจาก Cloud
   useEffect(() => {
     const loadProgress = async () => {
       try {
         const res = await fetch(`https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`);
         const data = await res.json();
+        
         if (data && data.currentTime > 0) {
           setMaxWatched(data.currentTime);
           console.log('🔄 เริ่มต่อจากวินาทีที่:', data.currentTime);
@@ -44,17 +45,18 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
     } catch (err) { console.error(err); }
   };
 
-  // 3. 👮‍♂️ ระบบตำรวจจับเวลา (Time Police)
+  // 3. 👮‍♂️ ระบบตำรวจจับเวลา (Time Police) - หัวใจสำคัญ!
   const handleProgress = (state) => {
     const current = state.playedSeconds;
 
     // ถ้าพยายามข้ามไปไกลกว่าที่เคยดู (เกิน 1 วินาที)
-    if (current > maxWatched + 1) {
+    if (current > maxWatched + 2) {
         // 🚫 ดีดกลับมาที่เดิมทันที!
         if (playerRef.current) {
             playerRef.current.seekTo(maxWatched, 'fraction');
         }
         console.log("👮‍♂️ จับได้ว่ากดข้าม! ดีดกลับไปที่ " + maxWatched);
+        // alert("⚠️ ห้ามกดข้ามวิดีโอ!"); // (เปิดบรรทัดนี้ถ้าอยากให้มีแจ้งเตือนเด้ง)
     } else {
         // ✅ ถ้าดูตามปกติ ให้อัปเดตเวลาสูงสุด
         if (current > maxWatched) {
@@ -83,7 +85,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
           height="100%"
           style={{ position: 'absolute', top: 0, left: 0 }}
           
-          controls={true} // ✅ เปิดปุ่ม YouTube ปกติ (เพื่อให้วิดีโอเล่นได้แน่นอน)
+          controls={true} // ✅ เปิดปุ่ม YouTube ปกติ (แก้ปัญหาจอดำ)
           
           onDuration={(d) => setDuration(d)}
           onProgress={handleProgress} // 👮‍♂️ ฝังระบบจับเวลาไว้ตรงนี้
@@ -103,7 +105,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
       <div style={{ padding: '15px' }}>
         <p><strong>ผู้เรียน:</strong> {employeeName} ({employeeId})</p>
         <div style={{ background: '#fff3cd', color: '#856404', padding: '10px', borderRadius: '5px', fontSize: '13px', marginTop: '10px' }}>
-            ⚠️ <strong>ระบบป้องกันการกดข้าม:</strong> หากท่านลากแถบวิดีโอไปข้างหน้า วิดีโอจะเด้งกลับมาที่เดิมอัตโนมัติ
+            👮‍♂️ <strong>Anti-Skip Active:</strong> ระบบจะดีดกลับอัตโนมัติหากมีการกดข้าม
         </div>
       </div>
     </div>

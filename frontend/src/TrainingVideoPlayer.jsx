@@ -22,7 +22,7 @@ const TrainingVideoPlayer = ({
   const saveProgressToBackend = async (currentTime, totalDuration) => {
     try {
       // *** แก้ตรงนี้: ต้องเป็น /api/save-progress ให้ตรงกับ server.js ***
-      const response = await fetch('https://training-api-pvak.onrender.com/api/save-progress', { 
+      const response = await fetch('https://training-api-pvak.onrender.com', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

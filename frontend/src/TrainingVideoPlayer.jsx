@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 
 const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
-  const [startTime, setStartTime] = useState(0);      // เวลาเริ่ม (ดึงจาก Server)
-  const [currentTime, setCurrentTime] = useState(0);  // เวลาปัจจุบัน (จับจากนาฬิกา)
-  const [isLoading, setIsLoading] = useState(true);   // สถานะรอโหลดข้อมูลเก่า
+  const [startTime, setStartTime] = useState(0);      
+  const [currentTime, setCurrentTime] = useState(0); 
+  const [isLoading, setIsLoading] = useState(true);   
   const [isCompleted, setIsCompleted] = useState(false);
+  const [debugMsg, setDebugMsg] = useState('⏳ กำลังเชื่อมต่อ Server...'); // เอาไว้ดูว่าดึงข้อมูลได้ไหม
 
-  // 1. แปลงลิ้งก์ YouTube เป็น ID
   const getYouTubeId = (url) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -16,46 +16,50 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   };
   const videoId = getYouTubeId(videoUrl);
 
-  // 2. โหลดข้อมูลเก่าจาก Cloud ก่อน (สำคัญมาก! ต้องรอก่อนถึงจะแสดงวิดีโอ)
+  // 1. โหลดข้อมูลเก่า
   useEffect(() => {
     const fetchProgress = async () => {
       try {
         const res = await fetch(`https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`);
+        
+        if (!res.ok) throw new Error("Server ไม่ตอบสนอง (อาจยังไม่อัปเดต Backend)");
+        
         const data = await res.json();
         
         if (data && data.currentTime > 0) {
-          setStartTime(data.currentTime); // ตั้งค่าเวลาเริ่มให้วิดีโอ
-          setCurrentTime(data.currentTime);
-          console.log('🔄 พบข้อมูลเดิม เริ่มที่วินาทีที่:', data.currentTime);
+          // ✅ สูตรลับ: ต้องปัดเศษเป็นจำนวนเต็ม (Math.floor) เสมอ ไม่งั้น YouTube เอ๋อ
+          const savedTime = Math.floor(data.currentTime);
+          setStartTime(savedTime); 
+          setCurrentTime(savedTime);
+          setDebugMsg(`✅ ดึงข้อมูลสำเร็จ: เริ่มต่อที่วินาทีที่ ${savedTime}`);
+        } else {
+          setDebugMsg(`🆕 ไม่พบประวัติการเรียน (เริ่มใหม่)`);
         }
       } catch (err) {
-        console.error("โหลดข้อมูลไม่สำเร็จ:", err);
+        console.error("Error:", err);
+        setDebugMsg(`❌ เกิดข้อผิดพลาด: ${err.message}`);
       } finally {
-        setIsLoading(false); // โหลดเสร็จแล้ว อนุญาตให้แสดงวิดีโอได้
+        setIsLoading(false);
       }
     };
     fetchProgress();
   }, [employeeId, courseId]);
 
-  // 3. ระบบจับเวลา & บันทึก (ทำงานแยกกับวิดีโอ)
+  // 2. จับเวลา (ใช้สูตรเดิม)
   useEffect(() => {
-    if (isLoading) return; // ถ้ารอข้อมูลเก่าอยู่ อย่าเพิ่งนับเวลา
+    if (isLoading) return; 
 
     const interval = setInterval(() => {
       setCurrentTime(prev => {
-        const newTime = prev + 5; // เพิ่มทีละ 5 วินาที
-        
-        // บันทึกข้อมูลส่งไปหลังบ้าน
+        const newTime = prev + 5;
         saveProgressToBackend(newTime);
-        
-        // เช็คว่าจบหรือยัง (สมมติ 10 นาที = 600 วิ)
         if (newTime >= 600 && !isCompleted) {
            setIsCompleted(true);
            alert("🎉 ยินดีด้วย! คุณผ่านการอบรมแล้ว");
         }
         return newTime;
       });
-    }, 5000); // ทำงานทุก 5 วินาที
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [isLoading, isCompleted]);
@@ -74,7 +78,6 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
     } catch (err) { console.error(err); }
   };
 
-  // ถ้ากำลังโหลดข้อมูลเก่า ให้ขึ้นรอ... (เพื่อกันไม่ให้วิดีโอเริ่มเล่นที่ 0)
   if (isLoading) {
     return <div className="card" style={{padding:'20px', textAlign:'center'}}>⏳ กำลังดึงข้อมูลการเรียนเดิม...</div>;
   }
@@ -89,7 +92,8 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
       <div style={{ position: 'relative', paddingTop: '56.25%', background: 'black' }}>
         {videoId ? (
           <iframe
-            // สูตรลับ: controls=0 (ซ่อนปุ่ม), disablekb=1 (ปิดคีย์บอร์ด), start=เวลาเดิม
+            // Key: ช่วยบังคับให้ React โหลด Iframe ใหม่เมื่อเวลาเปลี่ยน
+            key={startTime} 
             src={`https://www.youtube.com/embed/${videoId}?start=${startTime}&autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0`}
             title="YouTube video player"
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
@@ -105,7 +109,6 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
       <div style={{ padding: '15px' }}>
         <p><strong>ผู้เรียน:</strong> {employeeName}</p>
         
-        {/* หลอดแสดงความคืบหน้า (สร้างเอง เพราะใน YouTube เราซ่อนไปแล้ว) */}
         <div style={{ background: '#e5e7eb', height: '10px', borderRadius: '5px', marginTop: '10px', overflow:'hidden' }}>
             <div style={{ width: `${(currentTime / 600) * 100}%`, background: '#2563eb', height: '100%', transition: 'width 0.5s' }}></div>
         </div>
@@ -113,12 +116,16 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
             ⏱️ เวลาที่เรียน: {currentTime} / 600 วินาที
         </p>
 
+        {/* กล่อง Debug: จะบอกความจริงว่าทำไมไม่ต่อที่เดิม */}
+        <div style={{ marginTop: '10px', padding: '5px 10px', background: '#f3f4f6', borderRadius: '4px', fontSize: '11px', color: '#6b7280', fontFamily: 'monospace' }}>
+            🔧 Status: {debugMsg}
+        </div>
+
         <div style={{ background: '#fff3cd', color: '#856404', padding: '10px', borderRadius: '5px', fontSize: '13px', marginTop: '15px' }}>
             🔒 <strong>ระบบล็อกการเรียน:</strong>
             <ul style={{margin: '5px 0 0 20px', padding:0}}>
                 <li>แถบควบคุมถูกซ่อนเพื่อป้องกันการกดข้าม</li>
                 <li>คลิกที่หน้าจอวิดีโอเพื่อ <strong>เล่น / หยุด</strong></li>
-                <li>หากปิดไปแล้วกลับมาใหม่ วิดีโอจะเล่นต่อจากเดิมอัตโนมัติ</li>
             </ul>
         </div>
       </div>

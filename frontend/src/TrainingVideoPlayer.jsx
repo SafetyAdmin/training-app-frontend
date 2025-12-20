@@ -7,9 +7,11 @@ const TrainingVideoPlayer = ({
   employeeName, 
   courseId 
 }) => {
-  const [elapsedTime, setElapsedTime] = useState(0); // จับเวลาที่เปิดหน้าจอนี้
+  const [elapsedTime, setElapsedTime] = useState(0); 
+  const [startTime, setStartTime] = useState(0); // เวลาเริ่มต้นของวิดีโอ
+  const [isCompleted, setIsCompleted] = useState(false); // สถานะเรียนจบหรือยัง
 
-  // ฟังก์ชันแปลงลิ้งก์ YouTube ให้เป็นรหัสวิดีโอ (เช่น VZoyfQAg9ag)
+  // 1. ดึง ID วิดีโอจาก YouTube URL
   const getYouTubeId = (url) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -19,24 +21,28 @@ const TrainingVideoPlayer = ({
 
   const videoId = getYouTubeId(videoUrl);
 
-  // ฟังก์ชันส่งเวลาไปหลังบ้าน (ส่งทุกๆ 5 วินาที)
+  // 2. โหลดข้อมูลเก่าจากเครื่อง (Local Storage) เมื่อเปิดหน้าเว็บ
   useEffect(() => {
-    const interval = setInterval(() => {
-      // เพิ่มเวลาทีละ 5 วินาที (จำลองการเรียน)
-      setElapsedTime(prev => {
-        const newTime = prev + 5;
-        saveProgressToBackend(newTime);
-        return newTime;
-      });
-    }, 5000);
+    const savedData = localStorage.getItem(`progress_${employeeId}_${courseId}`);
+    if (savedData) {
+      const { time, completed } = JSON.parse(savedData);
+      setStartTime(time); // ตั้งเวลาเริ่มให้ตรงกับที่ดูค้างไว้
+      setElapsedTime(time);
+      setIsCompleted(completed);
+      console.log('🔄 โหลดข้อมูลเดิม:', time, 'วินาที | จบแล้ว:', completed);
+    }
+  }, [employeeId, courseId]);
 
-    return () => clearInterval(interval);
-  }, []);
+  // 3. ฟังก์ชันบันทึกข้อมูล (ทั้งลงเครื่อง และส่งไปหลังบ้าน)
+  const saveProgress = (currentTime, completed = false) => {
+    // A. บันทึกลงเครื่อง (เพื่อให้กลับมาดูต่อได้)
+    localStorage.setItem(`progress_${employeeId}_${courseId}`, JSON.stringify({
+      time: currentTime,
+      completed: completed
+    }));
 
-  const saveProgressToBackend = async (currentTime) => {
-    try {
-      // ✅ ลิ้งก์ API ที่ถูกต้อง
-      await fetch('https://training-api-pvak.onrender.com/api/save-progress', { 
+    // B. ส่งไปหลังบ้าน (ให้ Admin ดู)
+    fetch('https://training-api-pvak.onrender.com/api/save-progress', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -44,26 +50,47 @@ const TrainingVideoPlayer = ({
           employeeName,
           courseId,
           currentTime: currentTime,
-          totalDuration: 600 // ค่าสมมติ (10 นาที) เพราะ Iframe ดึงเวลาจริงยาก
+          totalDuration: 600 // สมมติว่าคลิปยาว 10 นาที (ถ้าครบเวลาจะถือว่าผ่าน)
         })
-      });
-      console.log('บันทึกเวลาเรียน:', currentTime);
-    } catch (err) {
-      console.error("บันทึกไม่สำเร็จ:", err);
-    }
+    }).catch(err => console.error("Save Error:", err));
   };
+
+  // 4. ระบบจับเวลา (ทำงานทุก 5 วินาที)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsedTime(prev => {
+        const newTime = prev + 5;
+        
+        // ถ้าดูเกิน 10 นาที (600 วิ) ให้ถือว่าเรียนจบ
+        let completedStatus = isCompleted;
+        if (newTime >= 600 && !isCompleted) {
+          completedStatus = true;
+          setIsCompleted(true);
+          alert("🎉 ยินดีด้วย! คุณผ่านการอบรมหลักสูตรนี้แล้ว");
+        }
+
+        saveProgress(newTime, completedStatus);
+        return newTime;
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isCompleted]); // เพิ่ม dependency เพื่อให้สถานะ completed อัปเดตถูกต้อง
 
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #ddd' }}>
-      <div style={{ padding: '15px', background: '#2563eb', color: 'white' }}>
-        <h3 style={{ margin: 0 }}>📺 ห้องเรียนออนไลน์</h3>
+      <div style={{ padding: '15px', background: isCompleted ? '#10b981' : '#2563eb', color: 'white', transition: '0.3s' }}>
+        <h3 style={{ margin: 0 }}>
+          {isCompleted ? '✅ เรียนจบหลักสูตรแล้ว' : '📺 ห้องเรียนออนไลน์'}
+        </h3>
         <p style={{ margin: 0, opacity: 0.8 }}>หลักสูตร: {courseId}</p>
       </div>
 
       <div style={{ position: 'relative', paddingTop: '56.25%', background: 'black' }}>
         {videoId ? (
           <iframe
-            src={`https://www.youtube.com/embed/${videoId}`}
+            // เพิ่ม ?start=... เพื่อสั่งให้ YouTube เล่นต่อจากวินาทีเดิม
+            src={`https://www.youtube.com/embed/${videoId}?start=${startTime}&autoplay=1`}
             title="YouTube video player"
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
             frameBorder="0"
@@ -78,9 +105,19 @@ const TrainingVideoPlayer = ({
       </div>
 
       <div style={{ padding: '15px' }}>
-        <p><strong>ผู้เรียน:</strong> {employeeName} ({employeeId})</p>
-        <p style={{ color: 'green' }}>⏱️ เวลาที่เรียนไปแล้ว: {elapsedTime} วินาที</p>
-        <p style={{ fontSize: '12px', color: '#666' }}>*ระบบจะบันทึกเวลาอัตโนมัติตราบเท่าที่คุณเปิดหน้านี้ไว้</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+                <p><strong>ผู้เรียน:</strong> {employeeName} ({employeeId})</p>
+                <p style={{ color: isCompleted ? 'green' : '#666', fontWeight: 'bold' }}>
+                    ⏱️ เวลาที่บันทึกล่าสุด: {elapsedTime} วินาที
+                </p>
+            </div>
+            {isCompleted && <span style={{fontSize: '30px'}}>🏅</span>}
+        </div>
+        
+        <p style={{ fontSize: '12px', color: '#888', marginTop: '10px' }}>
+            * ระบบจะบันทึกเวลาดูคลิปของคุณไว้ในเครื่องนี้ หากปิดแล้วเปิดใหม่ วิดีโอจะเล่นต่อจากเดิม
+        </p>
       </div>
     </div>
   );

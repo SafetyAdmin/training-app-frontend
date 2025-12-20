@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const mongoose = require('mongoose'); // <--- บรรทัดนี้ต้องอยู่บนสุดๆ
+const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
@@ -8,8 +8,6 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // --- 1. ส่วนเชื่อมต่อ Database ---
-// ⚠️ อย่าลืมเอาลิ้งก์ที่คุณก๊อปปี้มาเมื่อกี้ มาวางทับตรงข้อความนี้นะครับ
-// และอย่าลืมแก้ <password> เป็นรหัสผ่านของคุณด้วย
 const MONGO_URI = 'mongodb+srv://haekwang:Hae347795@cluster0.rk7rvot.mongodb.net/?appName=Cluster0';
 
 mongoose.connect(MONGO_URI)
@@ -19,7 +17,7 @@ mongoose.connect(MONGO_URI)
 // --- 2. สร้าง Model (Schema) ---
 const progressSchema = new mongoose.Schema({
   employeeId: String,
-  employeeName: String, // [แก้ตรงนี้ 1] เพิ่มบรรทัดนี้
+  employeeName: String,
   courseId: String,
   lastWatchedTime: Number,
   isCompleted: Boolean,
@@ -28,9 +26,8 @@ const progressSchema = new mongoose.Schema({
 
 const Progress = mongoose.model('Progress', progressSchema);
 
-// --- 3. แก้ไข API save-progress: ให้รับค่า employeeName ด้วย ---
+// --- 3. API บันทึกข้อมูล (Save) ---
 app.post('/api/save-progress', async (req, res) => {
-  // [แก้ตรงนี้ 2] รับ employeeName เพิ่มเข้ามา
   const { employeeId, employeeName, courseId, currentTime, totalDuration } = req.body;
 
   try {
@@ -39,18 +36,17 @@ app.post('/api/save-progress', async (req, res) => {
     if (!progress) {
       progress = new Progress({
         employeeId,
-        employeeName, // บันทึกชื่อลงไปตอนสร้างใหม่
+        employeeName,
         courseId,
         lastWatchedTime: currentTime,
         isCompleted: false
       });
     } else {
-      // อัปเดตชื่อด้วย (เผื่อพนักงานเปลี่ยนชื่อ)
-      progress.employeeName = employeeName; 
+      progress.employeeName = employeeName; // อัปเดตชื่อล่าสุด
       
-      if (currentTime > progress.lastWatchedTime) {
-         progress.lastWatchedTime = currentTime;
-      }
+      // บันทึกเฉพาะเมื่อดูไกลกว่าเดิม (หรือจะบันทึกตลอดก็ได้ แล้วแต่ชอบ)
+      // แนะนำให้บันทึกตลอดเพื่อให้ resume ได้แม่นยำที่สุด
+      progress.lastWatchedTime = currentTime; 
     }
 
     if (totalDuration && currentTime >= (totalDuration * 0.95)) {
@@ -63,39 +59,39 @@ app.post('/api/save-progress', async (req, res) => {
     res.json({ success: true, message: 'Saved' });
 
   } catch (error) {
-    console.error(error);
+    console.error("Save Error:", error);
     res.status(500).json({ success: false });
   }
 });
 
-// API: ดึงรายงาน (HR Dashboard)
+// --- 4. API ดึงข้อมูล (Get) - แก้ไขแล้ว ---
 app.get('/api/get-progress', async (req, res) => {
     try {
         const { employeeId, courseId } = req.query;
 
-        // ค้นหาข้อมูลล่าสุดของคนนี้ ในคอร์สนี้
-        const progress = await TrainingProgress.findOne({ 
+        // ✅ แก้ไข 1: ใช้ 'Progress' (ตัวแปรที่ประกาศไว้ข้างบน)
+        const progress = await Progress.findOne({ 
             employeeId: employeeId, 
             courseId: courseId 
-        }).sort({ timestamp: -1 }); // เอาอันล่าสุด
+        }).sort({ lastUpdated: -1 }); // ✅ แก้ไข 2: ใช้ 'lastUpdated' ตาม Schema
 
         if (progress) {
-            // ถ้าเจอ ส่งเวลากลับไป
+            // ✅ แก้ไข 3: ส่งค่า lastWatchedTime กลับไปในชื่อ currentTime (เพื่อให้หน้าบ้านเข้าใจ)
             res.json({ 
-                currentTime: progress.currentTime, 
-                totalDuration: progress.totalDuration 
+                currentTime: progress.lastWatchedTime || 0, 
+                totalDuration: 0 // (ใน DB ไม่ได้เก็บ duration ไว้ ส่ง 0 ไปก่อน หน้าบ้านจะรูจากวิดีโอเอง)
             });
         } else {
-            // ถ้าไม่เจอ (เพิ่งเรียนครั้งแรก) ให้ส่ง 0
+            // ถ้าไม่เคยเรียน ส่ง 0
             res.json({ currentTime: 0, totalDuration: 0 });
         }
     } catch (err) {
-        console.error(err);
+        console.error("Get Error:", err);
         res.status(500).json({ error: 'ดึงข้อมูลไม่สำเร็จ' });
     }
 });
 
-// --- 4. Start Server ---
+// --- 5. Start Server ---
 app.listen(3001, () => {
   console.log('Server running on port 3001');
 });

@@ -69,13 +69,30 @@ app.post('/api/save-progress', async (req, res) => {
 });
 
 // API: ดึงรายงาน (HR Dashboard)
-app.get('/api/progress-report', async (req, res) => {
-  try {
-    const reports = await Progress.find().sort({ lastUpdated: -1 });
-    res.json(reports);
-  } catch (error) {
-    res.status(500).json({ error: 'ดึงข้อมูลไม่สำเร็จ' });
-  }
+app.get('/api/get-progress', async (req, res) => {
+    try {
+        const { employeeId, courseId } = req.query;
+
+        // ค้นหาข้อมูลล่าสุดของคนนี้ ในคอร์สนี้
+        const progress = await TrainingProgress.findOne({ 
+            employeeId: employeeId, 
+            courseId: courseId 
+        }).sort({ timestamp: -1 }); // เอาอันล่าสุด
+
+        if (progress) {
+            // ถ้าเจอ ส่งเวลากลับไป
+            res.json({ 
+                currentTime: progress.currentTime, 
+                totalDuration: progress.totalDuration 
+            });
+        } else {
+            // ถ้าไม่เจอ (เพิ่งเรียนครั้งแรก) ให้ส่ง 0
+            res.json({ currentTime: 0, totalDuration: 0 });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'ดึงข้อมูลไม่สำเร็จ' });
+    }
 });
 
 // --- 4. Start Server ---

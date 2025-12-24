@@ -1,133 +1,111 @@
 // frontend/src/TrainingVideoPlayer.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ReactPlayer from 'react-player';
 
 const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
-  const [startTime, setStartTime] = useState(0);      
-  const [currentTime, setCurrentTime] = useState(0); 
-  const [isLoading, setIsLoading] = useState(true);   
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [debugMsg, setDebugMsg] = useState('⏳ กำลังเชื่อมต่อ Server...'); // เอาไว้ดูว่าดึงข้อมูลได้ไหม
+  const [playedSeconds, setPlayedSeconds] = useState(0); // เวลาที่เล่นไปแล้ว (วินาที)
+  const [totalDuration, setTotalDuration] = useState(0); // ความยาววิดีโอทั้งหมด
+  const [isReady, setIsReady] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('⏳ กำลังโหลดข้อมูลเรียนเดิม...');
+  const playerRef = useRef(null);
+  
+  // ตัวแปรสำหรับกันการ Save ถี่เกินไป
+  const lastSaveTime = useRef(0);
 
-  const getYouTubeId = (url) => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
-  const videoId = getYouTubeId(videoUrl);
-
-  // 1. โหลดข้อมูลเก่า
+  // 1. โหลดเวลาเรียนล่าสุดเมื่อเปิดหน้าเว็บ
   useEffect(() => {
-    const fetchProgress = async () => {
-      try {
-        const res = await fetch(`https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`);
+    fetch(`https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`)
+      .then(res => res.json())
+      .then(data => {
+        const savedTime = data.currentTime || 0;
+        setPlayedSeconds(savedTime);
+        setStatusMsg(`✅ ดึงข้อมูลสำเร็จ: เริ่มต่อที่วินาทีที่ ${Math.floor(savedTime)}`);
         
-        if (!res.ok) throw new Error("Server ไม่ตอบสนอง (อาจยังไม่อัปเดต Backend)");
-        
-        const data = await res.json();
-        
-        if (data && data.currentTime > 0) {
-          // ✅ สูตรลับ: ต้องปัดเศษเป็นจำนวนเต็ม (Math.floor) เสมอ ไม่งั้น YouTube เอ๋อ
-          const savedTime = Math.floor(data.currentTime);
-          setStartTime(savedTime); 
-          setCurrentTime(savedTime);
-          setDebugMsg(`✅ ดึงข้อมูลสำเร็จ: เริ่มต่อที่วินาทีที่ ${savedTime}`);
-        } else {
-          setDebugMsg(`🆕 ไม่พบประวัติการเรียน (เริ่มใหม่)`);
+        // สั่งให้วิดีโอกระโดดไปเวลาเดิม (ถ้ามี)
+        if (savedTime > 0 && playerRef.current) {
+          playerRef.current.seekTo(savedTime, 'seconds');
         }
-      } catch (err) {
-        console.error("Error:", err);
-        setDebugMsg(`❌ เกิดข้อผิดพลาด: ${err.message}`);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProgress();
+        setIsReady(true);
+      })
+      .catch(err => setStatusMsg('❌ ไม่สามารถดึงประวัติการเรียนได้'));
   }, [employeeId, courseId]);
 
-  // 2. จับเวลา (ใช้สูตรเดิม)
-  useEffect(() => {
-    if (isLoading) return; 
+  // 2. ฟังก์ชันบันทึกเวลา (ยิงไปบอก Server ทุกๆ 5 วินาที)
+  const handleProgress = (state) => {
+    const currentSec = state.playedSeconds;
+    setPlayedSeconds(currentSec); // อัปเดตหน้าจอทันที
 
-    const interval = setInterval(() => {
-      setCurrentTime(prev => {
-        const newTime = prev + 5;
-        saveProgressToBackend(newTime);
-        if (newTime >= 600 && !isCompleted) {
-           setIsCompleted(true);
-           alert("🎉 ยินดีด้วย! คุณผ่านการอบรมแล้ว");
-        }
-        return newTime;
-      });
-    }, 5000);
+    // ถ้าเวลาผ่านไปมากกว่า 5 วินาที ค่อยบันทึก 1 ที (ลดภาระ Server)
+    if (Math.abs(currentSec - lastSaveTime.current) > 5) {
+      saveProgress(currentSec, totalDuration);
+      lastSaveTime.current = currentSec;
+    }
+  };
 
-    return () => clearInterval(interval);
-  }, [isLoading, isCompleted]);
-
-  const saveProgressToBackend = async (time) => {
+  // 3. ฟังก์ชันส่งข้อมูลเข้า Backend
+  const saveProgress = async (currentTime, duration) => {
     try {
-      await fetch('https://training-api-pvak.onrender.com/api/save-progress', { 
+      await fetch('https://training-api-pvak.onrender.com/api/save-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          employeeId, employeeName, courseId,
-          currentTime: time,
-          totalDuration: 600
+          employeeId,
+          employeeName,
+          courseId,
+          currentTime,
+          totalDuration: duration
         })
       });
-    } catch (err) { console.error(err); }
+      // ไม่ต้องอัปเดต statusMsg ตลอด เดี๋ยวลายตา
+    } catch (error) {
+      console.error("Save failed", error);
+    }
   };
 
-  if (isLoading) {
-    return <div className="card" style={{padding:'20px', textAlign:'center'}}>⏳ กำลังดึงข้อมูลการเรียนเดิม...</div>;
-  }
-
   return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #ddd' }}>
-      <div style={{ padding: '15px', background: isCompleted ? '#10b981' : '#2563eb', color: 'white' }}>
-        <h3 style={{ margin: 0 }}>{isCompleted ? '✅ อบรมเสร็จสิ้น' : '📺 ห้องเรียนออนไลน์'}</h3>
-        <p style={{ margin: 0, opacity: 0.8 }}>หลักสูตร: {courseId}</p>
+    <div style={{ marginTop: '20px' }}>
+      {/* ส่วนแสดงสถานะ */}
+      <div style={{ 
+        background: '#f1f5f9', 
+        padding: '10px', 
+        borderRadius: '8px', 
+        marginBottom: '10px',
+        fontSize: '14px',
+        color: '#334155'
+      }}>
+        ⏱️ <b>เวลาที่เรียน:</b> {Math.floor(playedSeconds)} / {Math.floor(totalDuration)} วินาที
+        <br/>
+        🔧 <b>สถานะระบบ:</b> <span style={{ color: statusMsg.includes('❌') ? 'red' : 'green' }}>{statusMsg}</span>
       </div>
 
-      <div style={{ position: 'relative', paddingTop: '56.25%', background: 'black' }}>
-        {videoId ? (
-          <iframe
-            // Key: ช่วยบังคับให้ React โหลด Iframe ใหม่เมื่อเวลาเปลี่ยน
-            key={startTime} 
-            src={`https://www.youtube.com/embed/${videoId}?start=${startTime}&autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0`}
-            title="YouTube video player"
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          ></iframe>
-        ) : (
-          <div style={{color:'white', padding:'20px'}}>❌ ไม่พบวิดีโอ</div>
-        )}
+      {/* แถบ Progress Bar แบบสร้างเอง (ให้เห็นชัดๆ) */}
+      <div style={{ width: '100%', height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden', marginBottom: '15px' }}>
+        <div style={{ 
+          width: `${(playedSeconds / (totalDuration || 1)) * 100}%`, 
+          height: '100%', 
+          background: '#2563eb',
+          transition: 'width 0.3s'
+        }} />
       </div>
 
-      <div style={{ padding: '15px' }}>
-        <p><strong>ผู้เรียน:</strong> {employeeName}</p>
-        
-        <div style={{ background: '#e5e7eb', height: '10px', borderRadius: '5px', marginTop: '10px', overflow:'hidden' }}>
-            <div style={{ width: `${(currentTime / 600) * 100}%`, background: '#2563eb', height: '100%', transition: 'width 0.5s' }}></div>
-        </div>
-        <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-            ⏱️ เวลาที่เรียน: {currentTime} / 600 วินาที
-        </p>
-
-        {/* กล่อง Debug: จะบอกความจริงว่าทำไมไม่ต่อที่เดิม */}
-        <div style={{ marginTop: '10px', padding: '5px 10px', background: '#f3f4f6', borderRadius: '4px', fontSize: '11px', color: '#6b7280', fontFamily: 'monospace' }}>
-            🔧 Status: {debugMsg}
-        </div>
-
-        <div style={{ background: '#fff3cd', color: '#856404', padding: '10px', borderRadius: '5px', fontSize: '13px', marginTop: '15px' }}>
-            🔒 <strong>ระบบล็อกการเรียน:</strong>
-            <ul style={{margin: '5px 0 0 20px', padding:0}}>
-                <li>แถบควบคุมถูกซ่อนเพื่อป้องกันการกดข้าม</li>
-                <li>คลิกที่หน้าจอวิดีโอเพื่อ <strong>เล่น / หยุด</strong></li>
-            </ul>
-        </div>
+      {/* ตัวเล่นวิดีโอ */}
+      <div style={{ position: 'relative', paddingTop: '56.25%' /* 16:9 Aspect Ratio */ }}>
+        <ReactPlayer
+          ref={playerRef}
+          url={videoUrl}
+          width="100%"
+          height="100%"
+          style={{ position: 'absolute', top: 0, left: 0 }}
+          controls={true}
+          onDuration={(duration) => setTotalDuration(duration)}
+          onProgress={handleProgress}
+          // เมื่อวิดีโอพร้อม ให้กระโดดไปเวลาที่โหลดมาได้ทันที
+          onReady={() => {
+            if (playedSeconds > 0) {
+              playerRef.current.seekTo(playedSeconds);
+            }
+          }}
+        />
       </div>
     </div>
   );

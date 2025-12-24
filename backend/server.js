@@ -2028,6 +2028,35 @@ app.get('/api/setup-employees', async (req, res) => {
     } catch (err) { res.send('❌ Error: ' + err.message); }
 });
 
+// --- ส่วนที่เพิ่มใหม่: API สำหรับหน้า Admin Dashboard ---
+app.get('/api/admin/report', async (req, res) => {
+  try {
+    // 1. ดึงรายชื่อพนักงานทั้งหมด
+    const employees = await Employee.find();
+    
+    // 2. ดึงประวัติการเรียนทั้งหมด
+    const progressList = await Progress.find();
+
+    // 3. ผสมข้อมูล (Mapping) เพื่อทำรายงาน
+    const report = employees.map(emp => {
+      // หาว่าคนนี้เรียนคอร์สอะไรไปบ้าง
+      const empProgress = progressList.find(p => p.employeeId === emp.employeeId);
+      
+      return {
+        id: emp.employeeId,
+        name: emp.name,
+        course: empProgress ? empProgress.courseId : '-',
+        status: empProgress ? (empProgress.isCompleted ? '✅ ผ่านแล้ว' : '🟡 กำลังเรียน') : '🔴 ยังไม่เรียน',
+        lastSeen: empProgress ? new Date(empProgress.lastUpdated).toLocaleString('th-TH') : '-'
+      };
+    });
+
+    res.json({ success: true, data: report });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 4. Start Server
 const PORT = process.env.PORT || 3001; // ใช้ PORT ของ Render ถ้ามี
 app.listen(PORT, () => {

@@ -2,67 +2,110 @@
 import React, { useState } from 'react';
 
 const Login = ({ onLogin }) => {
-  const [isHrMode, setIsHrMode] = useState(false); // โหมด HR หรือไม่
-  const [formData, setFormData] = useState({ id: '', name: '', password: '' });
+  const [employeeId, setEmployeeId] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (isHrMode) {
-      // 🔒 รหัสลับสำหรับ HR (ตั้งง่ายๆ ว่า admin123)
-      if (formData.password === 'admin123') {
-        onLogin({ role: 'admin', name: 'HR Manager' });
+    setIsLoading(true);
+
+    // 1. เช็ค Admin (ทางลัดสำหรับ HR)
+    if (employeeId.toLowerCase() === 'admin') {
+      onLogin({ id: 'ADMIN', name: 'HR Admin', role: 'admin' });
+      return;
+    }
+
+    try {
+      // 2. ยิงไปเช็คกับ Server ว่ารหัสนี้มีในโรงงานไหม?
+      const res = await fetch('https://training-api-pvak.onrender.com/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeId: employeeId.trim() }) 
+      });
+      
+      const data = await res.json();
+
+      if (data.success) {
+        // ✅ ผ่าน! (Server เจอชื่อในระบบ)
+        onLogin({ 
+          id: data.employeeId, 
+          name: data.name, 
+          role: 'employee' 
+        });
       } else {
-        alert('รหัสผ่าน Admin ไม่ถูกต้อง!');
+        // ❌ ไม่ผ่าน (Server บอกว่าไม่มี)
+        alert("⛔️ ไม่พบรหัสพนักงานนี้ในระบบ\nกรุณาติดต่อ HR เพื่อลงทะเบียน");
       }
-    } else {
-      // 👤 ล็อกอินพนักงาน
-      if (formData.id && formData.name) {
-        onLogin({ role: 'employee', id: formData.id, name: formData.name });
-      } else {
-        alert('กรุณากรอกข้อมูลให้ครบ');
-      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ เชื่อมต่อ Server ไม่ได้ (ตรวจสอบอินเทอร์เน็ต)");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
-      <div className="card" style={{ width: '400px', textAlign: 'center' }}>
-        <h2 style={{ color: '#2563eb', marginBottom: '10px' }}>
-          {isHrMode ? '🛡️ Admin Portal' : '🚀 Training Portal'}
-        </h2>
-        <p style={{ color: '#666', marginBottom: '30px' }}>
-          {isHrMode ? 'กรุณาใส่รหัสผ่านผู้ดูแลระบบ' : 'ระบบอบรมพนักงานออนไลน์'}
-        </p>
-        
-        <form onSubmit={handleSubmit}>
-          {!isHrMode && (
-            <>
-              <input name="id" className="input-field" placeholder="รหัสพนักงาน (เช่น EMP001)" onChange={handleChange} />
-              <input name="name" className="input-field" placeholder="ชื่อ-นามสกุล" onChange={handleChange} />
-            </>
-          )}
+    <div style={{ 
+      height: '100vh', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      background: '#f1f5f9' 
+    }}>
+      <div style={{ 
+        background: 'white', 
+        padding: '40px', 
+        borderRadius: '15px', 
+        boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
+        width: '100%', 
+        maxWidth: '400px',
+        textAlign: 'center'
+      }}>
+        <div style={{ fontSize: '50px', marginBottom: '10px' }}>🏭</div>
+        <h2 style={{ color: '#1e293b', marginBottom: '5px' }}>Training Portal</h2>
+        <p style={{ color: '#64748b', marginBottom: '30px' }}>ระบบอบรมพนักงานออนไลน์</p>
+
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           
-          {isHrMode && (
-            <input type="password" name="password" className="input-field" placeholder="Admin Password" onChange={handleChange} />
-          )}
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#475569' }}>รหัสพนักงาน</label>
+            <input
+              type="text"
+              placeholder="ระบุรหัส (เช่น EMP001)"
+              value={employeeId}
+              onChange={(e) => setEmployeeId(e.target.value)}
+              style={{ 
+                width: '100%', padding: '12px', marginTop: '5px',
+                borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '16px', boxSizing: 'border-box'
+              }}
+              required
+            />
+          </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }}>
-            {isHrMode ? 'เข้าสู่ระบบ Admin' : 'เข้าสู่ห้องเรียน'}
-          </button>
-        </form>
-
-        <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
           <button 
-            onClick={() => setIsHrMode(!isHrMode)} 
-            style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px' }}
+            type="submit" 
+            disabled={isLoading}
+            style={{ 
+              padding: '14px', 
+              background: isLoading ? '#94a3b8' : '#2563eb', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              fontSize: '16px', 
+              fontWeight: 'bold', 
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              marginTop: '10px',
+              transition: 'background 0.2s'
+            }}
           >
-            {isHrMode ? '← กลับไปหน้าพนักงาน' : 'สำหรับเจ้าหน้าที่ HR (Admin Only)'}
+            {isLoading ? '⏳ กำลังตรวจสอบ...' : 'เข้าสู่ห้องเรียน'}
           </button>
-        </div>
+
+        </form>
+        
+        <p style={{ marginTop: '20px', fontSize: '12px', color: '#94a3b8' }}>
+            * ระบบจะดึงชื่อ-สกุล อัตโนมัติเมื่อรหัสถูกต้อง
+        </p>
       </div>
     </div>
   );

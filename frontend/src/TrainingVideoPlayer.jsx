@@ -12,8 +12,18 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   // ตัวแปรสำหรับกันการ Save ถี่เกินไป
   const lastSaveTime = useRef(0);
 
-  // 1. โหลดเวลาเรียนล่าสุดเมื่อเปิดหน้าเว็บ
+  // 🔴 ส่วนที่เพิ่มใหม่: รีเซ็ตค่าทุกครั้งที่เปลี่ยนคลิป (videoUrl เปลี่ยน)
   useEffect(() => {
+    setTotalDuration(0);
+    setPlayedSeconds(0);
+    setIsReady(false);
+    setStatusMsg('🔄 กำลังโหลดวิดีโอใหม่...');
+  }, [videoUrl]);
+
+  // 1. โหลดเวลาเรียนล่าสุดเมื่อเปิดหน้าเว็บ (หรือเมื่อเปลี่ยนคอร์ส)
+  useEffect(() => {
+    if (!videoUrl) return; // ถ้าไม่มีลิ้งก์ไม่ต้องโหลด
+
     fetch(`https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`)
       .then(res => res.json())
       .then(data => {
@@ -28,7 +38,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
         setIsReady(true);
       })
       .catch(err => setStatusMsg('❌ ไม่สามารถดึงประวัติการเรียนได้'));
-  }, [employeeId, courseId]);
+  }, [employeeId, courseId, videoUrl]); // เพิ่ม videoUrl ใน dependency
 
   // 2. ฟังก์ชันบันทึกเวลา (ยิงไปบอก Server ทุกๆ 5 วินาที)
   const handleProgress = (state) => {
@@ -56,7 +66,6 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
           totalDuration: duration
         })
       });
-      // ไม่ต้องอัปเดต statusMsg ตลอด เดี๋ยวลายตา
     } catch (error) {
       console.error("Save failed", error);
     }
@@ -78,10 +87,10 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
         🔧 <b>สถานะระบบ:</b> <span style={{ color: statusMsg.includes('❌') ? 'red' : 'green' }}>{statusMsg}</span>
       </div>
 
-      {/* แถบ Progress Bar แบบสร้างเอง (ให้เห็นชัดๆ) */}
+      {/* แถบ Progress Bar แบบสร้างเอง */}
       <div style={{ width: '100%', height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden', marginBottom: '15px' }}>
         <div style={{ 
-          width: `${(playedSeconds / (totalDuration || 1)) * 100}%`, 
+          width: `${totalDuration > 0 ? (playedSeconds / totalDuration) * 100 : 0}%`, 
           height: '100%', 
           background: '#2563eb',
           transition: 'width 0.3s'
@@ -89,7 +98,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
       </div>
 
       {/* ตัวเล่นวิดีโอ */}
-      <div style={{ position: 'relative', paddingTop: '56.25%' /* 16:9 Aspect Ratio */ }}>
+      <div style={{ position: 'relative', paddingTop: '56.25%' }}>
         <ReactPlayer
           ref={playerRef}
           url={videoUrl}
@@ -99,7 +108,6 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
           controls={true}
           onDuration={(duration) => setTotalDuration(duration)}
           onProgress={handleProgress}
-          // เมื่อวิดีโอพร้อม ให้กระโดดไปเวลาที่โหลดมาได้ทันที
           onReady={() => {
             if (playedSeconds > 0) {
               playerRef.current.seekTo(playedSeconds);

@@ -9,29 +9,20 @@ function App() {
   const [selectedCourse, setSelectedCourse] = useState(null);
 
   const courses = [
-    { 
-      id: "SF001", 
-      title: "🔥 ทดสอบวิดีโอใหม่", 
-      // 👇 ลองใช้ลิ้งก์นี้ชั่วคราวครับ (คลิปมาตรฐานที่เปิดได้ทุกเว็บแน่นอน)
-      url: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",  
-      duration: "10 นาที" 
-    },
-    { 
-      id: "SF002", 
-      title: "🔥 ความปลอดภัยในโรงงาน", 
-      // ใส่ชื่อไฟล์ที่คุณเอาไปวางใน public/videos/
-      url: "https://www.youtube.com/watch?v=VZoyfQAg9ag",  
-      duration: "10 นาที" 
-    },
-    { 
-      id: "CPR002", 
-      title: "🐻 การปฐมพยาบาล", 
-      // ถ้าไม่มีไฟล์ ลองใช้ลิ้งก์เทสของ w3schools ได้ (อันนี้เล่นได้ชัวร์)
-      url: "https://www.youtube.com/watch?v=VZoyfQAg9ag", 
-      duration: "15 นาที" 
-    },
-    // ...
-  ];
+  { 
+    id: "SF001", 
+    title: "🔥 ทดสอบวิดีโอใหม่", 
+    // ลอง URL นี้ (วิดีโอสั้นๆ จาก W3Schools)
+    url: "https://www.w3schools.com/html/mov_bbb.mp4",  
+    duration: "10 วินาที" 
+  },
+  { 
+    id: "SF002", 
+    title: "🎬 ทดสอบ YouTube", 
+    url: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",  
+    duration: "30 วินาที" 
+  }
+];
 
   // 1. ถ้ายังไม่ Login -> แสดงหน้า Login
   if (!user) {

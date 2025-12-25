@@ -232,11 +232,19 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
             height="100%"
             style={{ position: 'absolute', top: 0, left: 0 }}
             controls={true}
+            playing={false}
             config={{
               file: {
                 attributes: {
                   controlsList: 'nodownload',
-                  onContextMenu: e => e.preventDefault()
+                  onContextMenu: e => e.preventDefault(),
+                  crossOrigin: 'anonymous'
+                }
+              },
+              youtube: {
+                playerVars: { 
+                  showinfo: 1,
+                  modestbranding: 1 
                 }
               }
             }}

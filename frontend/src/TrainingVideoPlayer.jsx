@@ -14,10 +14,10 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
 
   // ฟังก์ชันบันทึกเวลา
   const saveProgress = async (currentTime, duration) => {
-    if (!currentTime || currentTime < 1) return; // ไม่บันทึกถ้าเวลาน้อยเกินไป
+    if (!currentTime || currentTime < 1) return;
     
     try {
-      await fetch('https://training-api-pvak.onrender.com/api/save-progress', {
+      const response = await fetch('https://training-api-pvak.onrender.com/api/save-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -28,9 +28,21 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
           totalDuration: duration
         })
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const result = await response.json();
+      if (result.success) {
+        setStatusMsg(`✅ บันทึกสำเร็จ: ${Math.floor(currentTime)}s (${Math.floor((currentTime/duration)*100)}%)`);
+      } else {
+        setStatusMsg(`⚠️ บันทึกไม่สำเร็จ - ลองใหม่อีกครั้ง`);
+      }
       console.log(`✅ บันทึกแล้ว: ${Math.floor(currentTime)}s`);
     } catch (error) {
       console.error("❌ Save failed", error);
+      setStatusMsg(`❌ ไม่สามารถบันทึกได้: ${error.message}`);
     }
   };
 
@@ -57,15 +69,19 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
     if (!videoUrl || isLoadingProgress.current) return;
     
     isLoadingProgress.current = true;
+    setStatusMsg('⏳ กำลังโหลดข้อมูล...');
     
     fetch(`https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         const savedTime = data.currentTime || 0;
         setPlayedSeconds(savedTime);
         
         if (savedTime > 0) {
-          setStatusMsg(`✅ ดึงข้อมูลสำเร็จ: เริ่มต่อที่วินาทีที่ ${Math.floor(savedTime)}`);
+          setStatusMsg(`✅ พบประวัติเดิม: ${Math.floor(savedTime)} วินาที`);
         } else {
           setStatusMsg(`✅ เริ่มเรียนใหม่`);
         }
@@ -74,7 +90,8 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
         isLoadingProgress.current = false;
       })
       .catch(err => {
-        setStatusMsg('❌ ไม่สามารถดึงประวัติการเรียนได้');
+        console.error('โหลดข้อมูลไม่สำเร็จ:', err);
+        setStatusMsg(`⚠️ โหลดไม่สำเร็จ (${err.message}) - เริ่มใหม่ที่ 0 วินาที`);
         setIsReady(true);
         isLoadingProgress.current = false;
       });

@@ -4,7 +4,11 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*', // อนุญาตให้ใครก็ได้เข้ามา (แก้ปัญหา CORS 100%)
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());
 
 // --- 1. เชื่อมต่อ Database ---

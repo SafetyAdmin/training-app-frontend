@@ -97,7 +97,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
         }} />
       </div>
 
-      {/* ตัวเล่นวิดีโอ */}
+      {/* ตัวเล่นวิดีโอ.. */}
       <div style={{ position: 'relative', paddingTop: '56.25%' }}>
         <ReactPlayer
           ref={playerRef}

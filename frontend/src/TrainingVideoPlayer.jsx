@@ -7,6 +7,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   const [totalDuration, setTotalDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [statusMsg, setStatusMsg] = useState('⏳ กำลังโหลดข้อมูลเรียนเดิม...');
+  const [videoError, setVideoError] = useState(null);
   const playerRef = useRef(null);
   const lastSaveTime = useRef(0);
   const currentVideoUrl = useRef(videoUrl);
@@ -60,6 +61,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
     setTotalDuration(0);
     setPlayedSeconds(0);
     setIsReady(false);
+    setVideoError(null);
     setStatusMsg('🔄 กำลังโหลดวิดีโอใหม่...');
     lastSaveTime.current = 0;
   }, [videoUrl]);
@@ -151,50 +153,126 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
     <div style={{ marginTop: '20px' }}>
       {/* ส่วนแสดงสถานะ */}
       <div style={{ 
-        background: '#f1f5f9', 
+        background: videoError ? '#fee2e2' : '#f1f5f9', 
         padding: '10px', 
         borderRadius: '8px', 
         marginBottom: '10px',
         fontSize: '14px',
         color: '#334155'
       }}>
-        ⏱️ <b>เวลาที่เรียน:</b> {Math.floor(playedSeconds)} / {Math.floor(totalDuration)} วินาที
-        <br/>
-        📊 <b>ความคืบหน้า:</b> {totalDuration > 0 ? Math.floor((playedSeconds / totalDuration) * 100) : 0}%
-        <br/>
-        🔧 <b>สถานะระบบ:</b> <span style={{ color: statusMsg.includes('❌') ? 'red' : 'green' }}>{statusMsg}</span>
+        {videoError ? (
+          <>
+            ❌ <b>เกิดข้อผิดพลาด:</b> <span style={{ color: 'red' }}>{videoError}</span>
+            <br/>
+            🔗 <b>URL:</b> <span style={{ fontSize: '11px', wordBreak: 'break-all' }}>{videoUrl}</span>
+          </>
+        ) : (
+          <>
+            ⏱️ <b>เวลาที่เรียน:</b> {Math.floor(playedSeconds)} / {Math.floor(totalDuration)} วินาที
+            <br/>
+            📊 <b>ความคืบหน้า:</b> {totalDuration > 0 ? Math.floor((playedSeconds / totalDuration) * 100) : 0}%
+            <br/>
+            🔧 <b>สถานะระบบ:</b> <span style={{ color: statusMsg.includes('❌') || statusMsg.includes('⚠️') ? 'orange' : 'green' }}>{statusMsg}</span>
+          </>
+        )}
       </div>
 
       {/* Progress Bar */}
-      <div style={{ width: '100%', height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden', marginBottom: '15px' }}>
-        <div style={{ 
-          width: `${totalDuration > 0 ? (playedSeconds / totalDuration) * 100 : 0}%`, 
-          height: '100%', 
-          background: playedSeconds >= totalDuration * 0.9 ? '#10b981' : '#2563eb',
-          transition: 'width 0.3s'
-        }} />
-      </div>
+      {!videoError && (
+        <div style={{ width: '100%', height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden', marginBottom: '15px' }}>
+          <div style={{ 
+            width: `${totalDuration > 0 ? (playedSeconds / totalDuration) * 100 : 0}%`, 
+            height: '100%', 
+            background: playedSeconds >= totalDuration * 0.9 ? '#10b981' : '#2563eb',
+            transition: 'width 0.3s'
+          }} />
+        </div>
+      )}
 
       {/* ตัวเล่นวิดีโอ */}
-      <div style={{ position: 'relative', paddingTop: '56.25%' }}>
-        <ReactPlayer
-          ref={playerRef}
-          url={videoUrl}
-          width="100%"
-          height="100%"
-          style={{ position: 'absolute', top: 0, left: 0 }}
-          controls={true}
-          onDuration={(duration) => setTotalDuration(duration)}
-          onProgress={handleProgress}
-          onEnded={handleEnded}
-          onReady={() => {
-            console.log('▶️ วิดีโอพร้อมเล่น');
-            // กระโดดไปเวลาเดิมหลังจากวิดีโอโหลดเสร็จ
-            if (playedSeconds > 0 && playerRef.current) {
-              playerRef.current.seekTo(playedSeconds, 'seconds');
-            }
-          }}
-        />
+      <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+        {videoError ? (
+          <div style={{ 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            width: '100%', 
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            textAlign: 'center',
+            padding: '20px'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
+            <div style={{ fontSize: '18px', marginBottom: '10px' }}>ไม่สามารถเล่นวิดีโอได้</div>
+            <div style={{ fontSize: '14px', opacity: 0.7 }}>{videoError}</div>
+            <button 
+              onClick={() => window.location.reload()}
+              style={{
+                marginTop: '20px',
+                padding: '10px 20px',
+                background: '#3b82f6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              🔄 ลองใหม่
+            </button>
+          </div>
+        ) : (
+          <ReactPlayer
+            ref={playerRef}
+            url={videoUrl}
+            width="100%"
+            height="100%"
+            style={{ position: 'absolute', top: 0, left: 0 }}
+            controls={true}
+            config={{
+              file: {
+                attributes: {
+                  controlsList: 'nodownload',
+                  onContextMenu: e => e.preventDefault()
+                }
+              }
+            }}
+            onDuration={(duration) => {
+              console.log('📏 ความยาว:', duration, 'วินาที');
+              setTotalDuration(duration);
+              if (duration > 0) {
+                setStatusMsg('✅ โหลดวิดีโอสำเร็จ');
+              }
+            }}
+            onProgress={handleProgress}
+            onEnded={handleEnded}
+            onReady={() => {
+              console.log('▶️ วิดีโอพร้อมเล่น');
+              setIsReady(true);
+              // กระโดดไปเวลาเดิมหลังจากวิดีโอโหลดเสร็จ
+              if (playedSeconds > 0 && playerRef.current) {
+                playerRef.current.seekTo(playedSeconds, 'seconds');
+                setStatusMsg(`▶️ เริ่มเล่นต่อที่ ${Math.floor(playedSeconds)} วินาที`);
+              }
+            }}
+            onError={(error) => {
+              console.error('❌ วิดีโอ Error:', error);
+              setVideoError('ไม่สามารถโหลดวิดีโอได้ กรุณาตรวจสอบ URL หรือลองใหม่อีกครั้ง');
+              setStatusMsg('❌ เกิดข้อผิดพลาดในการโหลดวิดีโอ');
+            }}
+            onBuffer={() => {
+              console.log('⏸️ กำลังบัฟเฟอร์...');
+              setStatusMsg('⏸️ กำลังโหลด...');
+            }}
+            onBufferEnd={() => {
+              console.log('▶️ บัฟเฟอร์เสร็จ');
+              setStatusMsg('▶️ กำลังเล่น');
+            }}
+          />
+        )}
       </div>
     </div>
   );

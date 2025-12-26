@@ -601,23 +601,38 @@ app.get('/api/setup-employees', async (req, res) => {
     }
 });
 
-// 3.5 API ดึงรายงานสำหรับ Admin (แก้ Logic ให้ดึงข้อมูลล่าสุด)
+// 3.5 API ดึงรายงานแบบ Matrix (ดูได้ทุกวิชา)
 app.get('/api/admin/report', async (req, res) => {
   try {
     const employees = await Employee.find();
-    
-    // เรียงจากล่าสุดไปหาเก่า เพื่อให้ .find() เจออันล่าสุดเสมอ
-    const progressList = await Progress.find().sort({ lastUpdated: -1 });
+    const progressList = await Progress.find(); // ดึงประวัติทั้งหมดออกมา
 
     const report = employees.map(emp => {
-      const empProgress = progressList.find(p => p.employeeId === emp.employeeId);
+      // 1. หาประวัติทั้งหมดของพนักงานคนนี้
+      const myProgress = progressList.filter(p => p.employeeId === emp.employeeId);
       
+      // 2. แปลงเป็น Object เพื่อง่ายต่อการเช็ค { 'SF001': { status: true }, 'SF002': ... }
+      const progressMap = {};
+      myProgress.forEach(p => {
+        progressMap[p.courseId] = {
+          isCompleted: p.isCompleted,
+          lastWatched: p.lastWatchedTime
+        };
+      });
+
+      // 3. หาเวลาล่าสุดที่เข้ามาใช้งาน (ไม่ว่าจะวิชาไหน)
+      let lastSeen = '-';
+      if (myProgress.length > 0) {
+        // หาค่าวันที่ที่มากที่สุด (ล่าสุด)
+        const maxDate = new Date(Math.max(...myProgress.map(p => new Date(p.lastUpdated))));
+        lastSeen = maxDate.toLocaleString('th-TH');
+      }
+
       return {
         id: emp.employeeId,
         name: emp.name,
-        course: empProgress ? empProgress.courseId : '-',
-        status: empProgress ? (empProgress.isCompleted ? '✅ ผ่านแล้ว' : '🟡 กำลังเรียน') : '🔴 ยังไม่เรียน',
-        lastSeen: empProgress ? new Date(empProgress.lastUpdated).toLocaleString('th-TH') : '-'
+        progress: progressMap, // ส่งรายการวิชาทั้งหมดไป
+        lastSeen: lastSeen
       };
     });
 

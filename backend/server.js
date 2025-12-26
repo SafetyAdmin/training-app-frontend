@@ -627,6 +627,20 @@ app.get('/api/admin/report', async (req, res) => {
   }
 });
 
+// 3.6 API รีเซ็ตการเรียน (สำหรับ Admin กดรีเซ็ตให้พนักงาน)
+app.post('/api/admin/reset-progress', async (req, res) => {
+  const { employeeId } = req.body;
+  try {
+    // ลบข้อมูล Progress ของพนักงานคนนั้นทิ้งทั้งหมด
+    await Progress.deleteMany({ employeeId });
+    console.log(`🗑️ Reset progress for: ${employeeId}`);
+    res.json({ success: true, message: 'รีเซ็ตข้อมูลเรียบร้อย' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // --- 4. Start Server ---
 const PORT = process.env.PORT || 3001; 
 app.listen(PORT, () => {

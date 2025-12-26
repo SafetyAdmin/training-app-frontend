@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ReactPlayer from 'react-player';
+importJH ReactPlayer from 'react-player';
 
 const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
-  const [playedSeconds, setPlayedSeconds] = useState(0); // เวลาที่เล่นไปแล้ว
-  const [totalDuration, setTotalDuration] = useState(0); // ความยาวคลิป
+  const [playedSeconds, setPlayedSeconds] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [statusMsg, setStatusMsg] = useState('⏳ กำลังโหลดข้อมูล...');
   
   const playerRef = useRef(null);
   const lastSaveTime = useRef(0);
   const currentVideoUrl = useRef(videoUrl);
+  
+  // 🔥 ตัวแปรสำคัญ: จำว่า "ดูถึงวินาทีที่เท่าไหร่แล้ว" (ห้ามข้ามเกินนี้)
+  const maxWatchedTime = useRef(0); 
 
-  // 1. ฟังก์ชันส่งเวลาไปบันทึกที่ Server
+  // 1. ฟังก์ชันส่งเวลาไปบันทึก
   const saveProgress = async (currentTime, duration) => {
     if (!currentTime || currentTime < 1) return;
     try {
@@ -29,18 +32,19 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
     }
   };
 
-  // 2. เมื่อเปลี่ยนวิดีโอ -> ให้รีเซ็ตค่าต่างๆ
+  // 2. รีเซ็ตค่าเมื่อเปลี่ยนคลิป
   useEffect(() => {
     if (currentVideoUrl.current !== videoUrl) {
       setTotalDuration(0);
       setPlayedSeconds(0);
+      maxWatchedTime.current = 0; // รีเซ็ตตัวกันโกง
       setIsReady(false);
       setStatusMsg('🔄 กำลังเปลี่ยนวิดีโอ...');
       currentVideoUrl.current = videoUrl;
     }
   }, [videoUrl]);
 
-  // 3. เมื่อโหลด Component -> ให้ไปดึงเวลาเดิมจาก Server
+  // 3. โหลดเวลาเดิมจาก Server
   useEffect(() => {
     if (!videoUrl) return;
     
@@ -50,47 +54,70 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
       .then(data => {
         const savedTime = data.currentTime || 0;
         setPlayedSeconds(savedTime);
+        
+        // 🔥 สำคัญ: อนุญาตให้ข้ามได้ถึงแค่จุดที่เคยเรียนมาแล้ว
+        maxWatchedTime.current = savedTime; 
+
         if (savedTime > 0) {
           setStatusMsg(`✅ พบประวัติเดิม: เริ่มต่อที่ ${Math.floor(savedTime)} วินาที`);
         } else {
-          setStatusMsg('✅ เริ่มเรียนใหม่');
+          setStatusMsg('✅ เริ่มเรียนใหม่ (ห้ามกดข้าม)');
         }
         setIsReady(true);
       })
       .catch(() => setStatusMsg('⚠️ ดึงประวัติไม่ได้ (เริ่มใหม่ 0)'));
   }, [employeeId, courseId, videoUrl]);
 
-  // 4. ฟังก์ชันที่ทำงานตลอดเวลาที่วิดีโอเล่น
+  // 4. ฟังก์ชันกันโกง & บันทึกเวลา
   const handleProgress = (state) => {
     const currentSec = state.playedSeconds;
+
+    // ⛔ LOGIC กันโกง: ถ้าเวลาปัจจุบัน มากกว่า เวลาที่เคยดูเกิน 2 วินาที (แปลว่ากดข้าม)
+    if (currentSec > maxWatchedTime.current + 2) {
+      // สั่งให้ Player เด้งกลับไปที่เดิมทันที
+      if (playerRef.current) {
+        playerRef.current.seekTo(maxWatchedTime.current, 'seconds');
+      }
+      setStatusMsg('🚫 ห้ามกดข้าม! กรุณาดูวิดีโอให้จบ');
+      return; // จบการทำงาน ไม่บันทึกค่า
+    }
+
+    // ถ้าดูปกติ (ไม่โกง) -> อัปเดตเวลาล่าสุดที่ดูถึง
+    if (currentSec > maxWatchedTime.current) {
+      maxWatchedTime.current = currentSec;
+    }
+
     setPlayedSeconds(currentSec);
 
-    // บันทึกทุกๆ 5 วินาที
+    // บันทึกทุก 5 วินาที
     if (Math.abs(currentSec - lastSaveTime.current) >= 5) {
       saveProgress(currentSec, totalDuration);
       lastSaveTime.current = currentSec;
     }
   };
 
+  // เมื่อดูจบ
+  const handleEnded = () => {
+    saveProgress(totalDuration, totalDuration);
+    setStatusMsg('🎉 เรียนจบแล้ว! บันทึกเรียบร้อย');
+  };
+
   return (
     <div style={{ marginTop: '20px' }}>
-      {/* กล่องแสดงสถานะ */}
       <div style={{ background: '#f1f5f9', padding: '10px', borderRadius: '8px', marginBottom: '10px', fontSize: '14px', color: '#334155' }}>
         ⏱️ <b>เวลาที่เรียน:</b> {Math.floor(playedSeconds)} / {Math.floor(totalDuration)} วินาที <br/>
-        🔧 <b>สถานะ:</b> {statusMsg}
+        🔧 <b>สถานะ:</b> <span style={{color: statusMsg.includes('🚫') ? 'red' : 'green'}}>{statusMsg}</span>
       </div>
 
-      {/* แถบ Progress Bar สีฟ้า */}
       <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', marginBottom: '10px' }}>
         <div style={{ 
           width: `${totalDuration > 0 ? (playedSeconds / totalDuration) * 100 : 0}%`, 
           height: '100%', 
-          background: '#2563eb', 
+          background: playedSeconds >= totalDuration * 0.99 ? '#10b981' : '#2563eb', 
           transition: 'width 0.3s' 
         }} />
       </div>
 
-      {/* ตัวเล่นวิดีโอ (รองรับ YouTube และ MP4) */}
       <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000', borderRadius: '8px', overflow: 'hidden' }}>
         <ReactPlayer
           ref={playerRef}
@@ -98,14 +125,22 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
           width="100%"
           height="100%"
           style={{ position: 'absolute', top: 0, left: 0 }}
-          controls={true}
+          controls={true} // ยังโชว์ปุ่มได้ แต่กดข้ามไม่ได้ (จะเด้งกลับ)
           onDuration={(d) => setTotalDuration(d)}
           onProgress={handleProgress}
+          onEnded={handleEnded}
           onReady={() => {
             setIsReady(true);
-            // กระโดดไปเวลาเดิม (ถ้ามี)
             if (playedSeconds > 0 && playerRef.current) {
               playerRef.current.seekTo(playedSeconds, 'seconds');
+            }
+          }}
+          config={{
+            youtube: {
+              playerVars: { showinfo: 1, modestbranding: 1, rel: 0 }
+            },
+            file: {
+              attributes: { controlsList: 'nodownload' }
             }
           }}
         />

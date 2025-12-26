@@ -1,15 +1,116 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Web site created using create-react-app" />
-    <title>Training Portal</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Resume Fix for Mobile</title>
+    <style>
+        /* จัดหน้าจอให้สวยงาม */
+        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }
+        
+        /* กล่องใส่วิดีโอ */
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 16/9;
+            background: #222;
+        }
+
+        /* ตัววิดีโอ */
+        video {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* หน้ากากปุ่มกด (Overlay) */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); /* พื้นหลังดำจางๆ */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* ซ่อนหน้ากากเมื่อเล่นวิดีโอ */
+        .hidden { display: none; }
+
+        /* ดีไซน์ปุ่ม */
+        .btn-resume {
+            background-color: #e50914; /* สีแดงแบบ Netflix */
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .btn-restart {
+            background: transparent;
+            color: #ddd;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="video-container">
+    <video id="myVideo" playsinline controls>
+        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+        เบราว์เซอร์ของคุณไม่รองรับวิดีโอ
+    </video>
+
+    <div id="overlay" class="overlay">
+        <h3 style="color:white; margin-bottom:20px;">ดูต่อจากเดิมไหม? (ที่ 0:05)</h3>
+        
+        <button class="btn-resume" onclick="resumeVideo()">ดูต่อ (Resume)</button>
+        
+        <button class="btn-restart" onclick="playFromStart()">เริ่มใหม่</button>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('myVideo');
+    const overlay = document.getElementById('overlay');
+    
+    // สมมติว่า user ดูค้างไว้ที่วินาทีที่ 5 (ปกติค่านี้ดึงมาจาก Database)
+    const savedTime = 5; 
+
+    function resumeVideo() {
+        // 1. สั่งให้เล่นก่อนทันที (เพื่อให้ Browser มือถือยอมโหลดข้อมูล)
+        video.play().then(() => {
+            
+            // 2. เทคนิคแก้จอดำ: หน่วงเวลาเสี้ยววินาที (200ms) ให้ภาพแรกมา
+            setTimeout(() => {
+                video.currentTime = savedTime; // วาร์ปไปเวลาเดิม
+                overlay.classList.add('hidden'); // ซ่อนปุ่ม
+            }, 200);
+
+        }).catch(err => {
+            console.error("Auto-play failed:", err);
+            alert("กรุณากด Play ที่ตัววิดีโออีกครั้ง");
+        });
+    }
+
+    function playFromStart() {
+        video.currentTime = 0;
+        video.play();
+        overlay.classList.add('hidden');
+    }
+    
+    // เมื่อวิดีโอจบ ให้โชว์ปุ่มใหม่ (เผื่อจะดูซ้ำ)
+    video.addEventListener('ended', () => {
+        overlay.classList.remove('hidden');
+    });
+</script>
+
+</body>
 </html>

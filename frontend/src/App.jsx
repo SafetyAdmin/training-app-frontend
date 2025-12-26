@@ -36,24 +36,28 @@ function App() {
 
   return (
     <div>
-      {/* 1. Navbar สวยๆ ด้านบน */}
+      {/* 1. Navbar แบบเรียบหรู */}
       <nav className="navbar">
-        <div className="brand">
-          🏭 Training Portal
+        <div className="brand-logo">
+          🏢 Training Portal
         </div>
         <div className="user-profile">
-          <span>สวัสดีคุณ <b>{user.name}</b></span>
+          <span>สวัสดี, <b>{user.name}</b></span>
           <button className="btn-logout" onClick={() => setUser(null)}>
             ออกจากระบบ
           </button>
         </div>
       </nav>
 
-      <div className="main-container">
+      <div className="dashboard-container">
         {!selectedCourse ? (
-          // --- หน้ารวมคอร์สแบบ Grid ---
+          // --- หน้า Dashboard (เลือกคอร์ส) ---
           <div>
-            <h2 className="page-title">📚 หลักสูตรที่คุณต้องเรียน</h2>
+            <div className="section-header">
+              <h2>📚 เลือกบทเรียนของคุณ</h2>
+              <p>กรุณาเลือกหลักสูตรเพื่อเริ่มการฝึกอบรม (ระบบจะบันทึกเวลาอัตโนมัติ)</p>
+            </div>
+            
             <div className="course-grid">
               {courses.map(c => (
                 <div 
@@ -61,39 +65,45 @@ function App() {
                   className="course-card" 
                   onClick={() => setSelectedCourse(c)}
                 >
-                  <div className="card-header">
-                    <h4>{c.title}</h4>
-                    <span className="duration-badge">⏱️ {c.duration}</span>
+                  <div>
+                    <div className="card-icon">{c.icon}</div>
+                    <h3 className="card-title">{c.title}</h3>
+                    <div className="card-meta">
+                      🕒 ความยาว: {c.duration}
+                    </div>
                   </div>
-                  <div className="card-footer">
-                    <button className="btn-start-course">
-                      เริ่มเรียนเลย 👉
-                    </button>
-                  </div>
+                  
+                  <button className="btn-start-course">
+                    เริ่มเรียนเลย ➜
+                  </button>
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          // --- หน้าเล่นวิดีโอ ---
-          <div className="video-page-container">
-            <button className="btn-back" onClick={() => setSelectedCourse(null)}>
-              ⬅️ กลับไปหน้าหลักสูตร
-            </button>
+          // --- หน้าเรียนวิดีโอ ---
+          <div className="video-section">
+            <div className="back-nav">
+              <button className="btn-back" onClick={() => setSelectedCourse(null)}>
+                ⬅️ กลับไปหน้าหลักสูตร
+              </button>
+            </div>
             
-            <h2 style={{marginTop:0, marginBottom:'1rem', color:'#1e293b'}}>
-              {selectedCourse.title}
-            </h2>
-            
-            <TrainingVideoPlayer 
-              videoUrl={selectedCourse.url}
-              employeeId={user.id}
-              employeeName={user.name}
-              courseId={selectedCourse.id}
-            />
-
-            <div style={{marginTop:'1.5rem', padding:'1rem', background:'#fff7ed', borderRadius:'8px', border:'1px solid #fed7aa', color:'#9a3412', fontSize:'0.9rem'}}>
-              💡 <b>คำแนะนำ:</b> ระบบจะบันทึกเวลาเรียนให้อัตโนมัติ (ห้ามกดข้าม) หากดูไม่จบสามารถกลับมาดูต่อวันหลังได้
+            <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <h2 style={{marginTop:0, marginBottom:'1rem', fontSize:'1.5rem', color:'#1e293b'}}>
+                {selectedCourse.icon} {selectedCourse.title}
+              </h2>
+              
+              <TrainingVideoPlayer 
+                videoUrl={selectedCourse.url}
+                employeeId={user.id}
+                employeeName={user.name}
+                courseId={selectedCourse.id}
+              />
+              
+              <div style={{marginTop:'1.5rem', padding:'1rem', background:'#fff7ed', borderRadius:'8px', border:'1px solid #fed7aa', color:'#9a3412', fontSize:'0.9rem'}}>
+                💡 <b>ข้อแนะนำ:</b> ระบบจะบันทึกเวลาเรียนให้อัตโนมัติ หากดูไม่จบสามารถกลับมาดูต่อได้
+              </div>
             </div>
           </div>
         )}

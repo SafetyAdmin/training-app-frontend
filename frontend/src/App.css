@@ -1,186 +1,232 @@
-/* App.css - New Design */
+/* App.css - Pro Dashboard Style */
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap');
+
 :root {
-  --primary-color: #2563eb; /* สีน้ำเงินหลัก */
-  --secondary-color: #1e40af; /* สีน้ำเงินเข้มตอน Hover */
-  --bg-light: #f8fafc; /* สีพื้นหลังเทาอ่อน */
-  --text-dark: #1e293b; /* สีตัวอักษรเข้ม */
-  --text-gray: #64748b; /* สีตัวอักษรเทา */
-  --success: #10b981; /* สีเขียว */
+  --primary: #2563eb;       /* สีน้ำเงินหลัก */
+  --primary-hover: #1d4ed8;
+  --bg-main: #f8fafc;       /* พื้นหลัง */
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
+  --text-sub: #64748b;
+  --border-color: #e2e8f0;
 }
 
 body {
-  background-color: var(--bg-light);
-  color: var(--text-dark);
-  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
   margin: 0;
-  padding-bottom: 40px;
+  font-family: 'Sarabun', sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
 }
 
-/* --- Navbar --- */
+/* --- Navbar ด้านบน --- */
 .navbar {
-  background-color: #ffffff;
+  background: var(--card-bg);
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
-.navbar-brand {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--primary-color);
+.brand-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.5rem;
 }
 
-.user-info-bar {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+.user-profile {
+  font-size: 0.95rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
 
-/* ปุ่ม Logout สวยๆ */
 .btn-logout {
-  background-color: #fee2e2;
+  background: #fee2e2;
   color: #991b1b;
   border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
   font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-logout:hover {
-  background-color: #fecaca;
-  color: #7f1d1d;
+  background: #fecaca;
 }
 
-/* --- Main Container --- */
-.container {
-  max-width: 1000px;
-  margin: 40px auto;
-  padding: 0 20px;
+/* --- Container --- */
+.dashboard-container {
+  max-width: 1200px;
+  margin: 2.5rem auto;
+  padding: 0 1.5rem;
 }
 
-.section-title {
-  font-size: 1.8rem;
-  margin-bottom: 30px;
-  color: var(--text-dark);
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.section-header {
+  margin-bottom: 2rem;
 }
 
-/* --- Course Card Design (หัวใจสำคัญ) --- */
-.course-list {
+.section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.section-header p {
+  color: var(--text-sub);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* --- Course Grid (การจัดเรียงการ์ด) --- */
+.course-grid {
   display: grid;
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* ปรับขนาดไพ่อัตโนมัติ */
+  gap: 1.5rem;
 }
 
+/* --- ตัวการ์ด (Card) --- */
 .course-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 25px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
   cursor: pointer;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  transition: all 0.3s ease-in-out;
-  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 220px; /* ความสูงการ์ดที่เหมาะสม */
   position: relative;
   overflow: hidden;
 }
 
-/* เส้นสีด้านซ้าย */
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  border-color: var(--primary);
+}
+
+/* เส้นสีน้ำเงินด้านบนการ์ด */
 .course-card::before {
   content: '';
   position: absolute;
-  left: 0;
   top: 0;
-  height: 100%;
-  width: 6px;
-  background-color: var(--primary-color);
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--primary);
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-/* เอฟเฟกต์ตอนเอาเมาส์ชี้ */
-.course-card:hover {
-  transform: translateY(-5px) scale(1.01);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  border-color: #bfdbfe;
+.course-card:hover::before {
+  opacity: 1;
 }
 
-.card-content {
-  flex-grow: 1;
-}
-
-.course-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0 0 10px 0;
-  color: var(--text-dark);
+/* เนื้อหาในการ์ด */
+.card-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  width: 50px;
+  height: 50px;
+  background: #eff6ff;
+  border-radius: 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  color: var(--primary);
 }
 
-/* ไอคอนหน้าชื่อคอร์ส */
-.course-icon {
-  font-size: 1.5rem;
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+  /* ตัดคำถ้ายาวเกิน 2 บรรทัด */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.course-duration {
-  color: var(--text-gray);
+.card-meta {
+  font-size: 0.85rem;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* ปุ่มเริ่มเรียน */
+.btn-start-course {
+  margin-top: auto;
+  width: 100%;
+  background: white;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 0.6rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.course-card:hover .btn-start-course {
+  background: var(--primary);
+  color: white;
+}
+
+/* --- หน้าเล่นวิดีโอ (ย้อนกลับ) --- */
+.back-nav {
+  margin-bottom: 1.5rem;
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  cursor: pointer;
   font-size: 0.95rem;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.5rem;
+  padding: 0;
 }
 
-/* ปุ่ม Start ด้านขวาของการ์ด */
-.btn-start {
-  background-color: #eff6ff;
-  color: var(--primary-color);
-  padding: 10px 20px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.course-card:hover .btn-start {
-  background-color: var(--primary-color);
-  color: white;
+.btn-back:hover {
+  color: var(--primary);
+  text-decoration: underline;
 }
 
 /* --- Responsive --- */
 @media (max-width: 640px) {
   .navbar {
     flex-direction: column;
-    gap: 15px;
-    padding: 1rem;
+    gap: 1rem;
+    align-items: flex-start;
   }
-  .user-info-bar {
+  .user-profile {
     width: 100%;
     justify-content: space-between;
   }
-  .course-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
-  }
-  .btn-start {
-    width: 100%;
-    text-align: center;
+  .course-grid {
+    grid-template-columns: 1fr; /* มือถือแสดงแถวละ 1 ใบ */
   }
 }

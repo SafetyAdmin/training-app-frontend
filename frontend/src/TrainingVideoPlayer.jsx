@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-importJH ReactPlayer from 'react-player';
+import ReactPlayer from 'react-player'; // ✅ แก้จาก importJH เป็น import แล้ว
 
 const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
   const [playedSeconds, setPlayedSeconds] = useState(0);

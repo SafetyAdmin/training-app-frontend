@@ -1,309 +1,115 @@
-// frontend/src/TrainingVideoPlayer.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import ReactPlayer from 'react-player'; // เปลี่ยนเป็น lazy loading
+import ReactPlayer from 'react-player'; // ✅ เปลี่ยนเป็นแบบมาตรฐาน (ลบ /lazy ออก)
 
 const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
   const [playedSeconds, setPlayedSeconds] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
-  const [statusMsg, setStatusMsg] = useState('⏳ กำลังโหลดข้อมูลเรียนเดิม...');
+  const [statusMsg, setStatusMsg] = useState('⏳ กำลังโหลดข้อมูล...');
   const [videoError, setVideoError] = useState(null);
+  
   const playerRef = useRef(null);
   const lastSaveTime = useRef(0);
   const currentVideoUrl = useRef(videoUrl);
-  const isLoadingProgress = useRef(false);
 
   // ฟังก์ชันบันทึกเวลา
   const saveProgress = async (currentTime, duration) => {
     if (!currentTime || currentTime < 1) return;
-    
     try {
-      const response = await fetch('https://training-api-pvak.onrender.com/api/save-progress', {
+      await fetch('https://training-api-pvak.onrender.com/api/save-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          employeeId,
-          employeeName,
-          courseId,
-          currentTime,
-          totalDuration: duration
+          employeeId, employeeName, courseId,
+          currentTime, totalDuration: duration
         })
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const result = await response.json();
-      if (result.success) {
-        setStatusMsg(`✅ บันทึกสำเร็จ: ${Math.floor(currentTime)}s (${Math.floor((currentTime/duration)*100)}%)`);
-      } else {
-        setStatusMsg(`⚠️ บันทึกไม่สำเร็จ - ลองใหม่อีกครั้ง`);
-      }
-      console.log(`✅ บันทึกแล้ว: ${Math.floor(currentTime)}s`);
+      setStatusMsg(`✅ บันทึกแล้ว: ${Math.floor(currentTime)} วินาที`);
     } catch (error) {
-      console.error("❌ Save failed", error);
-      setStatusMsg(`❌ ไม่สามารถบันทึกได้: ${error.message}`);
+      console.error("Save failed", error);
     }
   };
 
-  // 🔥 บันทึกก่อนเปลี่ยนวิดีโอ
+  // 1. จัดการเมื่อเปลี่ยนวิดีโอ
   useEffect(() => {
-    // ถ้า URL เปลี่ยนและมีเวลาเดิมให้บันทึก
-    if (currentVideoUrl.current !== videoUrl && playedSeconds > 0 && totalDuration > 0) {
-      console.log('🔄 เปลี่ยนวิดีโอ - บันทึกข้อมูลเดิมก่อน');
-      saveProgress(playedSeconds, totalDuration);
+    if (currentVideoUrl.current !== videoUrl) {
+      setTotalDuration(0);
+      setPlayedSeconds(0);
+      setIsReady(false);
+      setVideoError(null);
+      setStatusMsg('🔄 กำลังโหลดวิดีโอใหม่...');
+      currentVideoUrl.current = videoUrl;
     }
-    
-    currentVideoUrl.current = videoUrl;
-    
-    // รีเซ็ตค่า
-    setTotalDuration(0);
-    setPlayedSeconds(0);
-    setIsReady(false);
-    setVideoError(null);
-    setStatusMsg('🔄 กำลังโหลดวิดีโอใหม่...');
-    lastSaveTime.current = 0;
   }, [videoUrl]);
 
-  // โหลดเวลาเรียนล่าสุด
+  // 2. ดึงเวลาเดิมเมื่อเริ่ม
   useEffect(() => {
-    if (!videoUrl || isLoadingProgress.current) return;
+    if (!videoUrl) return;
     
-    isLoadingProgress.current = true;
-    setStatusMsg('⏳ กำลังโหลดข้อมูล...');
-    
+    setStatusMsg('⏳ กำลังดึงประวัติการเรียน...');
     fetch(`https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
+      .then(res => res.json())
       .then(data => {
         const savedTime = data.currentTime || 0;
         setPlayedSeconds(savedTime);
-        
         if (savedTime > 0) {
-          setStatusMsg(`✅ พบประวัติเดิม: ${Math.floor(savedTime)} วินาที`);
+          setStatusMsg(`✅ เริ่มต่อที่วินาทีที่ ${Math.floor(savedTime)}`);
         } else {
-          setStatusMsg(`✅ เริ่มเรียนใหม่`);
+          setStatusMsg('✅ เริ่มเรียนใหม่');
         }
-        
         setIsReady(true);
-        isLoadingProgress.current = false;
       })
-      .catch(err => {
-        console.error('โหลดข้อมูลไม่สำเร็จ:', err);
-        setStatusMsg(`⚠️ โหลดไม่สำเร็จ (${err.message}) - เริ่มใหม่ที่ 0 วินาที`);
-        setIsReady(true);
-        isLoadingProgress.current = false;
-      });
+      .catch(() => setStatusMsg('⚠️ ดึงประวัติไม่ได้ (เริ่มใหม่ 0)'));
   }, [employeeId, courseId, videoUrl]);
 
-  // บันทึกระหว่างเล่น
+  // 3. ตัวจัดการขณะเล่น
   const handleProgress = (state) => {
     const currentSec = state.playedSeconds;
     setPlayedSeconds(currentSec);
 
-    // บันทึกทุก 5 วินาที
-    if (Math.abs(currentSec - lastSaveTime.current) >= 5) {
+    // บันทึกทุก 10 วินาที
+    if (Math.abs(currentSec - lastSaveTime.current) >= 10) {
       saveProgress(currentSec, totalDuration);
       lastSaveTime.current = currentSec;
     }
   };
 
-  // 🔥 บันทึกเมื่อจบวิดีโอ
-  const handleEnded = () => {
-    console.log('🎬 วิดีโอจบแล้ว - บันทึกข้อมูล');
-    saveProgress(totalDuration, totalDuration);
-    setStatusMsg('✅ เรียนจบแล้ว!');
-  };
-
-  // 🔥 บันทึกก่อนออกจากหน้า
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (playedSeconds > 0 && totalDuration > 0) {
-        // ใช้ sendBeacon เพราะทำงานได้แม้ปิดหน้า
-        const data = JSON.stringify({
-          employeeId,
-          employeeName,
-          courseId,
-          currentTime: playedSeconds,
-          totalDuration
-        });
-        
-        navigator.sendBeacon(
-          'https://training-api-pvak.onrender.com/api/save-progress',
-          new Blob([data], { type: 'application/json' })
-        );
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      // บันทึกก่อน unmount
-      if (playedSeconds > 0 && totalDuration > 0) {
-        saveProgress(playedSeconds, totalDuration);
-      }
-    };
-  }, [playedSeconds, totalDuration, employeeId, employeeName, courseId]);
-
   return (
     <div style={{ marginTop: '20px' }}>
-      {/* ส่วนแสดงสถานะ */}
-      <div style={{ 
-        background: videoError ? '#fee2e2' : '#f1f5f9', 
-        padding: '10px', 
-        borderRadius: '8px', 
-        marginBottom: '10px',
-        fontSize: '14px',
-        color: '#334155'
-      }}>
+      {/* กล่องสถานะ */}
+      <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', marginBottom: '10px', fontSize: '14px', color: '#334155' }}>
         {videoError ? (
-          <>
-            ❌ <b>เกิดข้อผิดพลาด:</b> <span style={{ color: 'red' }}>{videoError}</span>
-            <br/>
-            🔗 <b>URL:</b> <span style={{ fontSize: '11px', wordBreak: 'break-all' }}>{videoUrl}</span>
-          </>
+          <span style={{ color: 'red' }}>❌ {videoError}</span>
         ) : (
           <>
-            ⏱️ <b>เวลาที่เรียน:</b> {Math.floor(playedSeconds)} / {Math.floor(totalDuration)} วินาที
-            <br/>
-            📊 <b>ความคืบหน้า:</b> {totalDuration > 0 ? Math.floor((playedSeconds / totalDuration) * 100) : 0}%
-            <br/>
-            🔧 <b>สถานะระบบ:</b> <span style={{ color: statusMsg.includes('❌') || statusMsg.includes('⚠️') ? 'orange' : 'green' }}>{statusMsg}</span>
+            ⏱️ <b>เวลา:</b> {Math.floor(playedSeconds)} / {Math.floor(totalDuration)} วิ | 
+            🔧 <b>สถานะ:</b> {statusMsg}
           </>
         )}
       </div>
 
-      {/* Progress Bar */}
-      {!videoError && (
-        <div style={{ width: '100%', height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden', marginBottom: '15px' }}>
-          <div style={{ 
-            width: `${totalDuration > 0 ? (playedSeconds / totalDuration) * 100 : 0}%`, 
-            height: '100%', 
-            background: playedSeconds >= totalDuration * 0.9 ? '#10b981' : '#2563eb',
-            transition: 'width 0.3s'
-          }} />
-        </div>
-      )}
-
       {/* ตัวเล่นวิดีโอ */}
-      <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
-        {videoError ? (
-          <div style={{ 
-            position: 'absolute', 
-            top: 0, 
-            left: 0, 
-            width: '100%', 
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            textAlign: 'center',
-            padding: '20px'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
-            <div style={{ fontSize: '18px', marginBottom: '10px' }}>ไม่สามารถเล่นวิดีโอได้</div>
-            <div style={{ fontSize: '14px', opacity: 0.7 }}>{videoError}</div>
-            <button 
-              onClick={() => window.location.reload()}
-              style={{
-                marginTop: '20px',
-                padding: '10px 20px',
-                background: '#3b82f6',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer'
-              }}
-            >
-              🔄 ลองใหม่
-            </button>
-          </div>
-        ) : (
-            <ReactPlayer
-            ref={playerRef}
-            url={videoUrl}
-            width="100%"
-            height="100%"
-            style={{ position: 'absolute', top: 0, left: 0 }}
-            controls={true}
-            playing={false}
-            light={false} // ปิด thumbnail แสดงวิดีโอทันที
-            pip={false} // ปิด picture-in-picture
-            config={{
-              file: {
-                attributes: {
-                  controlsList: 'nodownload',
-                  onContextMenu: e => e.preventDefault(),
-                  crossOrigin: 'anonymous'
-                }
-              },
-              youtube: {
-                playerVars: { 
-                  showinfo: 1,
-                  modestbranding: 1,
-                  rel: 0, // ไม่แสดงวิดีโอที่เกี่ยวข้อง
-                  iv_load_policy: 3 // ไม่แสดง annotation
-                },
-                embedOptions: {
-                  height: '100%',
-                  width: '100%'
-                }
-              }
-            }}
-            onDuration={(duration) => {
-              console.log('📏 ความยาววิดีโอ:', duration, 'วินาที');
-              setTotalDuration(duration);
-              if (duration > 0) {
-                setStatusMsg('✅ โหลดวิดีโอสำเร็จ - พร้อมเล่น');
-              } else {
-                setStatusMsg('⚠️ ไม่สามารถโหลดความยาววิดีโอได้');
-              }
-            }}
-            onProgress={handleProgress}
-            onEnded={handleEnded}
-            onReady={() => {
-              console.log('▶️ วิดีโอพร้อมเล่นแล้ว');
-              setIsReady(true);
-              if (playedSeconds > 0 && playerRef.current) {
-                playerRef.current.seekTo(playedSeconds, 'seconds');
-                setStatusMsg(`▶️ กระโดดไปที่ ${Math.floor(playedSeconds)} วินาที`);
-              } else {
-                setStatusMsg('▶️ พร้อมเล่นแล้ว - กดปุ่ม Play');
-              }
-            }}
-            onError={(error) => {
-              console.error('❌ เกิดข้อผิดพลาด:', error);
-              setVideoError(`ไม่สามารถโหลดวิดีโอได้ (${typeof error === 'object' ? JSON.stringify(error) : error})`);
-              setStatusMsg('❌ วิดีโอโหลดไม่สำเร็จ - ตรวจสอบ URL หรือลองใหม่');
-            }}
-            onBuffer={() => {
-              console.log('⏸️ กำลังบัฟเฟอร์...');
-              setStatusMsg('⏸️ กำลังโหลดวิดีโอ...');
-            }}
-            onBufferEnd={() => {
-              console.log('▶️ โหลดเสร็จแล้ว');
-              setStatusMsg('▶️ โหลดเสร็จ - กำลังเล่น');
-            }}
-            onStart={() => {
-              console.log('▶️ เริ่มเล่นวิดีโอแล้ว');
-              setStatusMsg('▶️ กำลังเล่นวิดีโอ');
-            }}
-            onPause={() => {
-              console.log('⏸️ หยุดชั่วคราว');
-              setStatusMsg('⏸️ วิดีโอหยุดชั่วคราว');
-            }}
-            onPlay={() => {
-              console.log('▶️ กำลังเล่น');
-              setStatusMsg('▶️ กำลังเล่นวิดีโอ');
-            }}
-          />
-        )}
+      <div style={{ position: 'relative', paddingTop: '56.25%', background: 'black' }}>
+        <ReactPlayer
+          ref={playerRef}
+          url={videoUrl}
+          width="100%"
+          height="100%"
+          style={{ position: 'absolute', top: 0, left: 0 }}
+          controls={true}
+          onDuration={(d) => setTotalDuration(d)}
+          onProgress={handleProgress}
+          onReady={() => {
+            setIsReady(true);
+            if (playedSeconds > 0 && playerRef.current) {
+              playerRef.current.seekTo(playedSeconds, 'seconds');
+            }
+          }}
+          onError={(e) => {
+            console.error('Video Error:', e);
+            setVideoError('ไม่สามารถเล่นวิดีโอนี้ได้ (อาจถูกบล็อก หรือไฟล์เสีย)');
+          }}
+        />
       </div>
     </div>
   );

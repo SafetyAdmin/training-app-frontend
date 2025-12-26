@@ -1,6 +1,6 @@
 // frontend/src/TrainingVideoPlayer.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import ReactPlayer from 'react-player';
+import ReactPlayer from 'react-player'; // เปลี่ยนเป็น lazy loading
 
 const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
   const [playedSeconds, setPlayedSeconds] = useState(0);
@@ -225,7 +225,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
             </button>
           </div>
         ) : (
-          <ReactPlayer
+            <ReactPlayer
             ref={playerRef}
             url={videoUrl}
             width="100%"
@@ -233,6 +233,8 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
             style={{ position: 'absolute', top: 0, left: 0 }}
             controls={true}
             playing={false}
+            light={false} // ปิด thumbnail แสดงวิดีโอทันที
+            pip={false} // ปิด picture-in-picture
             config={{
               file: {
                 attributes: {
@@ -244,40 +246,61 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
               youtube: {
                 playerVars: { 
                   showinfo: 1,
-                  modestbranding: 1 
+                  modestbranding: 1,
+                  rel: 0, // ไม่แสดงวิดีโอที่เกี่ยวข้อง
+                  iv_load_policy: 3 // ไม่แสดง annotation
+                },
+                embedOptions: {
+                  height: '100%',
+                  width: '100%'
                 }
               }
             }}
             onDuration={(duration) => {
-              console.log('📏 ความยาว:', duration, 'วินาที');
+              console.log('📏 ความยาววิดีโอ:', duration, 'วินาที');
               setTotalDuration(duration);
               if (duration > 0) {
-                setStatusMsg('✅ โหลดวิดีโอสำเร็จ');
+                setStatusMsg('✅ โหลดวิดีโอสำเร็จ - พร้อมเล่น');
+              } else {
+                setStatusMsg('⚠️ ไม่สามารถโหลดความยาววิดีโอได้');
               }
             }}
             onProgress={handleProgress}
             onEnded={handleEnded}
             onReady={() => {
-              console.log('▶️ วิดีโอพร้อมเล่น');
+              console.log('▶️ วิดีโอพร้อมเล่นแล้ว');
               setIsReady(true);
-              // กระโดดไปเวลาเดิมหลังจากวิดีโอโหลดเสร็จ
               if (playedSeconds > 0 && playerRef.current) {
                 playerRef.current.seekTo(playedSeconds, 'seconds');
-                setStatusMsg(`▶️ เริ่มเล่นต่อที่ ${Math.floor(playedSeconds)} วินาที`);
+                setStatusMsg(`▶️ กระโดดไปที่ ${Math.floor(playedSeconds)} วินาที`);
+              } else {
+                setStatusMsg('▶️ พร้อมเล่นแล้ว - กดปุ่ม Play');
               }
             }}
             onError={(error) => {
-              console.error('❌ วิดีโอ Error:', error);
-              setVideoError('ไม่สามารถโหลดวิดีโอได้ กรุณาตรวจสอบ URL หรือลองใหม่อีกครั้ง');
-              setStatusMsg('❌ เกิดข้อผิดพลาดในการโหลดวิดีโอ');
+              console.error('❌ เกิดข้อผิดพลาด:', error);
+              setVideoError(`ไม่สามารถโหลดวิดีโอได้ (${typeof error === 'object' ? JSON.stringify(error) : error})`);
+              setStatusMsg('❌ วิดีโอโหลดไม่สำเร็จ - ตรวจสอบ URL หรือลองใหม่');
             }}
             onBuffer={() => {
               console.log('⏸️ กำลังบัฟเฟอร์...');
-              setStatusMsg('⏸️ กำลังโหลด...');
+              setStatusMsg('⏸️ กำลังโหลดวิดีโอ...');
             }}
             onBufferEnd={() => {
-              console.log('▶️ บัฟเฟอร์เสร็จ');
-              setStatusMsg('▶️ กำลังเล่น');
+              console.log('▶️ โหลดเสร็จแล้ว');
+              setStatusMsg('▶️ โหลดเสร็จ - กำลังเล่น');
+            }}
+            onStart={() => {
+              console.log('▶️ เริ่มเล่นวิดีโอแล้ว');
+              setStatusMsg('▶️ กำลังเล่นวิดีโอ');
+            }}
+            onPause={() => {
+              console.log('⏸️ หยุดชั่วคราว');
+              setStatusMsg('⏸️ วิดีโอหยุดชั่วคราว');
+            }}
+            onPlay={() => {
+              console.log('▶️ กำลังเล่น');
+              setStatusMsg('▶️ กำลังเล่นวิดีโอ');
             }}
           />
         )}

@@ -1,42 +1,186 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* App.css - New Design */
+:root {
+  --primary-color: #2563eb; /* สีน้ำเงินหลัก */
+  --secondary-color: #1e40af; /* สีน้ำเงินเข้มตอน Hover */
+  --bg-light: #f8fafc; /* สีพื้นหลังเทาอ่อน */
+  --text-dark: #1e293b; /* สีตัวอักษรเข้ม */
+  --text-gray: #64748b; /* สีตัวอักษรเทา */
+  --success: #10b981; /* สีเขียว */
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+body {
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  margin: 0;
+  padding-bottom: 40px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+/* --- Navbar --- */
+.navbar {
+  background-color: #ffffff;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-weight: 500;
+}
+
+/* ปุ่ม Logout สวยๆ */
+.btn-logout {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  background-color: #fecaca;
+  color: #7f1d1d;
+}
+
+/* --- Main Container --- */
+.container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.section-title {
+  font-size: 1.8rem;
+  margin-bottom: 30px;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- Course Card Design (หัวใจสำคัญ) --- */
+.course-list {
+  display: grid;
+  gap: 20px;
+}
+
+.course-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease-in-out;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+/* เส้นสีด้านซ้าย */
+.course-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 6px;
+  background-color: var(--primary-color);
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+}
+
+/* เอฟเฟกต์ตอนเอาเมาส์ชี้ */
+.course-card:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-color: #bfdbfe;
+}
+
+.card-content {
+  flex-grow: 1;
+}
+
+.course-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ไอคอนหน้าชื่อคอร์ส */
+.course-icon {
+  font-size: 1.5rem;
+}
+
+.course-duration {
+  color: var(--text-gray);
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ปุ่ม Start ด้านขวาของการ์ด */
+.btn-start {
+  background-color: #eff6ff;
+  color: var(--primary-color);
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.course-card:hover .btn-start {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* --- Responsive --- */
+@media (max-width: 640px) {
+  .navbar {
+    flex-direction: column;
+    gap: 15px;
+    padding: 1rem;
   }
-  to {
-    transform: rotate(360deg);
+  .user-info-bar {
+    width: 100%;
+    justify-content: space-between;
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  .course-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
   }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+  .btn-start {
+    width: 100%;
+    text-align: center;
+  }
 }

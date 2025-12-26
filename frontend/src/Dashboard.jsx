@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-// 📌 กำหนดรายชื่อวิชาที่จะโชว์ในตาราง (ต้องตรงกับ ID ใน App.jsx)
+// 📌 รายชื่อวิชา (ต้องตรงกับ ID ใน App.jsx)
 const ALL_COURSES = [
-  { id: 'SF001', name: '🔥 ความปลอดภัย' },
-  { id: 'SF002', name: '⚡ ปฐมพยาบาล' },
-  { id: 'TEST01', name: '🧪 ทดสอบ MP4' }
+  { id: 'SF001', name: '🔥 หัวข้อวิชาที่ 1 ความรู้เกี่ยวกับความปลอดภัยในการทำงาน' },
+  { id: 'SF002', name: '⚡ การปฐมพยาบาล (YouTube)' },
+  { id: 'SF003', name: '🧪 ทดสอบไฟล์ MP4 (เผื่อ YouTube โดนบล็อก)' }
 ];
 
 const Dashboard = ({ onLogout }) => {
@@ -69,7 +69,6 @@ const Dashboard = ({ onLogout }) => {
                 <th style={{ padding: '16px', textAlign: 'left' }}>รหัส</th>
                 <th style={{ padding: '16px', textAlign: 'left', minWidth: '150px' }}>ชื่อ-นามสกุล</th>
                 
-                {/* 📌 วนลูปสร้างหัวตารางตามรายวิชา */}
                 {ALL_COURSES.map(course => (
                   <th key={course.id} style={{ padding: '16px', textAlign: 'center' }}>
                     {course.name}
@@ -88,17 +87,18 @@ const Dashboard = ({ onLogout }) => {
                   <td style={{ padding: '16px', fontWeight: 'bold', color: '#64748b' }}>{emp.id}</td>
                   <td style={{ padding: '16px', fontWeight: '600' }}>{emp.name}</td>
                   
-                  {/* 📌 วนลูปเช็คสถานะแต่ละวิชา */}
+                  {/* 📌 วนลูปเช็คสถานะแต่ละวิชา (แก้จุดที่ Error แล้ว) */}
                   {ALL_COURSES.map(course => {
-                    const status = emp.progress[course.id]; // ดึงข้อมูลวิชานั้นๆ ของคนนี้
+                    // 🔥 ใช้ ?. (Optional Chaining) เพื่อกันพัง ถ้า progress ไม่มีข้อมูล
+                    const status = emp.progress?.[course.id]; 
                     
                     if (!status) {
-                      return <td key={course.id} style={{textAlign:'center', color:'#cbd5e1'}}>🔴</td>; // ยังไม่เริ่ม
+                      return <td key={course.id} style={{textAlign:'center', color:'#cbd5e1'}}>🔴</td>;
                     }
                     if (status.isCompleted) {
-                      return <td key={course.id} style={{textAlign:'center', fontSize:'1.2rem'}}>✅</td>; // ผ่าน
+                      return <td key={course.id} style={{textAlign:'center', fontSize:'1.2rem'}}>✅</td>;
                     }
-                    return <td key={course.id} style={{textAlign:'center'}}><span style={{background:'#fef3c7', color:'#b45309', padding:'4px 8px', borderRadius:'6px', fontSize:'0.8rem'}}>🟡 กำลังเรียน</span></td>;
+                    return <td key={course.id} style={{textAlign:'center'}}><span style={{background:'#fef3c7', color:'#b45309', padding:'4px 8px', borderRadius:'6px', fontSize:'0.8rem'}}>🟡</span></td>;
                   })}
 
                   <td style={{ padding: '16px', textAlign:'center', color: '#94a3b8', fontSize:'0.85rem' }}>{emp.lastSeen}</td>

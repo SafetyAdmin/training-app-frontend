@@ -230,3 +230,38 @@ body {
     grid-template-columns: 1fr; /* มือถือแสดงแถวละ 1 ใบ */
   }
 }
+/* สไตล์หัวข้อหมวดหมู่ */
+.category-section {
+  margin-bottom: 3rem; /* เว้นระยะห่างระหว่างหมวด */
+}
+
+.category-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* เส้นขีดลาดยาวหลังชื่อหมวด */
+.category-title::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+  border-radius: 2px;
+}
+
+.category-icon {
+  background: #e0e7ff;
+  color: var(--primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}

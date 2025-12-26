@@ -1,12 +1,8 @@
 import React from 'react';
 
-// รับค่ามาให้ครบทุกตัว เพื่อกันไม่ให้ App.jsx ส่งมาแล้วไม่มีคนรับ
-const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
+// รับมาแค่ videoUrl ตัวเดียวพอ (ตัวอื่นลบทิ้งไปก่อน จะได้ไม่ Error)
+const TrainingVideoPlayer = ({ videoUrl }) => {
   
-  // 🔥 บรรทัดนี้สำคัญมาก! (ห้ามลบ)
-  // สั่ง console.log เพื่อหลอกระบบว่าเรา "ใช้งาน" ตัวแปรพวกนี้แล้ว (กัน Error: Unused vars)
-  console.log('Debug Info:', { videoUrl, employeeId, employeeName, courseId });
-
   if (!videoUrl) return <div style={{color:'red'}}>❌ ไม่พบลิ้งก์วิดีโอ</div>;
 
   return (
@@ -31,13 +27,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
         Browser ของคุณไม่รองรับวิดีโอนี้
       </video>
 
-      <div style={{ 
-        marginTop: '15px', 
-        fontSize: '12px', 
-        color: '#aaa',
-        borderTop: '1px solid #333',
-        paddingTop: '10px'
-      }}>
+      <div style={{ marginTop: '15px', fontSize: '12px', color: '#aaa' }}>
         🔗 <b>Source:</b> {videoUrl}
       </div>
     </div>

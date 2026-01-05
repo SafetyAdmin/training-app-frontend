@@ -65,15 +65,19 @@ const Dashboard = ({ onLogout }) => {
       });
 
       if (response.ok) {
-        // รีโหลดหน้าจอเพื่อดึงข้อมูลใหม่
-        window.location.reload(); 
+        // ❌ อย่าใช้ window.location.reload(); เพราะจะทำให้หลุด Login
+        // ✅ ให้เรียกฟังก์ชันดึงข้อมูลใหม่แทน
+        fetchReport(); 
+        alert("✅ ล้างข้อมูลเรียบร้อยแล้ว");
       } else {
         console.error("Failed to reset");
+        alert("❌ ลบไม่สำเร็จ");
       }
     } catch (error) {
       console.error("Error:", error);
+      alert("❌ เชื่อมต่อ Server ไม่ได้");
     } finally {
-      setShowConfirmReset(false); // ปิดปุ่มยืนยันไม่ว่าจะสำเร็จหรือไม่
+      setShowConfirmReset(false); // ปิดปุ่มยืนยัน
     }
   };
 

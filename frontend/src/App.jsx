@@ -58,8 +58,7 @@ function App() {
       title: "สถานีเรียนรู้ที่ 3 การปฏิบัติงานในที่อับอากาศ",
       url: "https://www.youtube.com/watch?v=pkbEetW3ic4",
       duration: "11:58 วินาที"
-    }
-    ,
+    },
     {
       id: "MC004",
       category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
@@ -67,6 +66,62 @@ function App() {
       title: "สถานีเรียนรู้ที่ 4 อันตรายจากสารเคมี",
       url: "https://www.youtube.com/watch?v=-zJ5IQAdcOo&t=1s",
       duration: "10:49 วินาที"
+    },
+    {
+      id: "MC005",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 5 การสื่อสารความเป็นอันตราย",
+      url: "https://www.youtube.com/watch?v=kwSFo2w-V5w",
+      duration: "09:30 วินาที"
+    },
+    {
+      id: "MC006",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 6 การตัดแยกอุปกรณ์",
+      url: "https://www.youtube.com/watch?v=YacumV_Zg7M",
+      duration: "08:26 วินาที"
+    },
+    {
+      id: "MC007",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 7 อันตรายจากไฟฟ้า",
+      url: "https://www.youtube.com/watch?v=FoTdek_K-nY",
+      duration: "10:24 วินาที"
+    },
+    {
+      id: "MC008",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 8 ความปลอดภัยในการทำงานกับเครื่องจักร",
+      url: "https://www.youtube.com/watch?v=hb8b9XWCLCc",
+      duration: "10:24 วินาที"
+    },
+    {
+      id: "MC009",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 9 ความปลอดภัยในงานเชื่อม",
+      url: "https://www.youtube.com/watch?v=3Ip4kW1UwKQ",
+      duration: "10:20 วินาที"
+    },
+    {
+      id: "MC010",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 10 การยกย้ายวัสดุสิ่งของด้วยแรงคน",
+      url: "https://www.youtube.com/watch?v=ZTQGeb2s_Z0",
+      duration: "08:13 วินาที"
+    },
+    {
+      id: "MC011",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 11 การทำงานบนที่สูง",
+      url: "https://www.youtube.com/watch?v=HfMtHovAVTk",
+      duration: "10:45 วินาที"
     }
   ];
 

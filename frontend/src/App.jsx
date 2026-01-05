@@ -122,6 +122,30 @@ function App() {
       title: "สถานีเรียนรู้ที่ 11 การทำงานบนที่สูง",
       url: "https://www.youtube.com/watch?v=HfMtHovAVTk",
       duration: "10:45 วินาที"
+    },
+    {
+      id: "S501",
+      category: "🗑️ 5ส เพื่อเพิ่มผลผลิต", // ชื่อหมวด
+      icon: " 🗑️",
+      title: "5ส เพื่อเพิ่มผลผลิต สำหรับอุตสาหกรรม ตอนที่ 1",
+      url: "https://www.youtube.com/watch?v=6lAoHEIRXLg",
+      duration: "1:48:19 วินาที"
+    },
+    {
+      id: "S502",
+      category: "🗑️ 5ส เพื่อเพิ่มผลผลิต", // ชื่อหมวด
+      icon: " 🗑️",
+      title: "5ส เพื่อเพิ่มผลผลิต สำหรับอุตสาหกรรม ตอนที่ 2",
+      url: "https://www.youtube.com/watch?v=ZoLQu1Dlifw",
+      duration: "1:40:34 วินาที"
+    },
+    {
+      id: "S503",
+      category: "🗑️ 5ส เพื่อเพิ่มผลผลิต", // ชื่อหมวด
+      icon: " 🗑️",
+      title: "5ส เพื่อเพิ่มผลผลิต สำหรับอุตสาหกรรม ตอนที่ 3",
+      url: "https://www.youtube.com/watch?v=MCpZB8AdN7o",
+      duration: "1:48:54 วินาที"
     }
   ];
 

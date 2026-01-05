@@ -106,7 +106,7 @@ const Dashboard = ({ onLogout }) => {
       <div className="main-container">
         <div className="section-header" style={{textAlign:'left', marginBottom:'1.5rem'}}>
           <h2 style={{margin:0}}>สรุปผลการฝึกอบรม (Training Summary)</h2>
-          <p>ข้อมูล ณ วันที่: {new Date().toLocaleDateString('th-TH', { dateStyle: 'long', timeStyle: 'short' })}</p>
+          <p>ข้อมูล ณ วันที่: {new Date().toLocaleString('th-TH', { dateStyle: 'long', timeStyle: 'short' })}</p>
         </div>
 
         {/* 1. ส่วนแสดงสถิติ (KPIs Dashboard) */}

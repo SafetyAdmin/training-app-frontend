@@ -349,3 +349,126 @@ tbody td {
   .navbar { padding: 0 1rem; }
   .user-profile span { display: none; } /* ซ่อนชื่อบนมือถือ */
 }
+/* --- Dashboard Stats Cards --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.stat-info h3 { margin: 0; font-size: 2rem; color: var(--text-main); }
+.stat-info p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+
+/* --- Toolbar & Filters --- */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.search-box {
+  position: relative;
+  min-width: 300px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 0.95rem;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.btn-print {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-print:hover { background: var(--primary-dark); }
+
+/* --- Table Detail --- */
+.date-label {
+  display: block;
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* --- Print Styles (สำหรับเวลาสั่งพิมพ์กระดาษ) --- */
+@media print {
+  .navbar, .btn-print, .btn-danger, .btn-reset, .search-box {
+    display: none !important;
+  }
+  body, .main-container {
+    background: white;
+    margin: 0;
+    padding: 0;
+    max-width: 100%;
+  }
+  .table-container {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  th, td {
+    border: 1px solid #000;
+    color: black !important;
+  }
+  .status-badge {
+    border: 1px solid #000;
+    background: none !important;
+    color: black !important;
+  }
+  /* เพิ่มลายเซ็นท้ายกระดาษ */
+  .print-footer {
+    display: flex !important;
+    justify-content: space-between;
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid #000;
+  }
+}
+
+.print-footer { display: none; } /* ซ่อนในหน้าจอปกติ */

@@ -1,18 +1,19 @@
-// src/Dashboard.jsx
-import React, { useState, useEffect } from 'react';
-import './App.css'; // ใช้ CSS เดียวกัน
+import React, { useState, useEffect, useMemo } from 'react';
+import './App.css';
 
 const ALL_COURSES = [
-  { id: 'SF001', name: 'ความปลอดภัยในการทำงาน' },
-  { id: 'SF002', name: 'กฎหมายความปลอดภัย' },
-  { id: 'SF003', name: 'ข้อบังคับความปลอดภัย' }
+  { id: 'SF001', name: 'ความปลอดภัยในการทำงาน (General Safety)' },
+  { id: 'SF002', name: 'กฎหมายความปลอดภัย (Safety Law)' },
+  { id: 'SF003', name: 'ข้อบังคับ จป. (Safety Rules)' }
 ];
 
 const Dashboard = ({ onLogout }) => {
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState(''); // 🔍 ค้นหาพนักงาน
   const [showConfirmReset, setShowConfirmReset] = useState(false);
 
+  // ดึงข้อมูล
   const fetchReport = () => {
     fetch('https://training-api-pvak.onrender.com/api/admin/report')
       .then(res => res.json())
@@ -30,12 +31,43 @@ const Dashboard = ({ onLogout }) => {
 
   useEffect(() => {
     fetchReport();
-    const interval = setInterval(fetchReport, 5000);
+    const interval = setInterval(fetchReport, 10000); // อัปเดตทุก 10 วิ
     return () => clearInterval(interval);
   }, []);
 
+  // 🧮 คำนวณสถิติสำหรับผู้บริหาร/Audit
+  const stats = useMemo(() => {
+    const totalEmp = employees.length;
+    const totalCourses = totalEmp * ALL_COURSES.length;
+    
+    let completedCount = 0;
+    employees.forEach(emp => {
+      ALL_COURSES.forEach(course => {
+        if (emp.progress?.[course.id]?.isCompleted) {
+          completedCount++;
+        }
+      });
+    });
+
+    const percent = totalCourses > 0 ? ((completedCount / totalCourses) * 100).toFixed(1) : 0;
+
+    return {
+      totalEmp,
+      completedCount,
+      totalCourses,
+      percent
+    };
+  }, [employees]);
+
+  // 🔍 ฟองก์ชันค้นหา
+  const filteredEmployees = employees.filter(emp => 
+    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    emp.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // ฟังก์ชันต่างๆ (Reset)
   const handleReset = async (employeeId, employeeName) => {
-    if (!window.confirm(`ยืนยันการลบประวัติของ: ${employeeName}?`)) return;
+    if (!window.confirm(`ยืนยันลบประวัติของ: ${employeeName}?`)) return;
     try {
       await fetch('https://training-api-pvak.onrender.com/api/admin/reset-progress', {
         method: 'POST',
@@ -43,104 +75,145 @@ const Dashboard = ({ onLogout }) => {
         body: JSON.stringify({ employeeId })
       });
       fetchReport();
-    } catch (error) {
-      console.error('Error:', error);
-    }
+    } catch (error) { console.error(error); }
   };
 
   const executeResetAll = async () => {
     try {
-      const response = await fetch('https://training-api-pvak.onrender.com/api/reset-all-progress', {
+      const res = await fetch('https://training-api-pvak.onrender.com/api/reset-all-progress', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
       });
-      if (response.ok) {
-        fetchReport();
-        alert("✅ ล้างข้อมูลเรียบร้อยแล้ว");
-      } else {
-        alert("❌ ลบไม่สำเร็จ");
-      }
-    } catch (error) {
-      alert("❌ เชื่อมต่อ Server ไม่ได้");
-    } finally {
-      setShowConfirmReset(false);
-    }
+      if (res.ok) { fetchReport(); alert("✅ ล้างข้อมูลเรียบร้อย"); }
+    } catch (error) { alert("❌ Error"); } finally { setShowConfirmReset(false); }
+  };
+
+  // 🖨️ ฟังก์ชันสั่งพิมพ์
+  const handlePrint = () => {
+    window.print();
   };
 
   return (
     <div>
       <nav className="navbar">
-        <div className="brand-logo">📊 Admin Dashboard</div>
+        <div className="brand-logo">📊 Safety Training Matrix</div>
         <div className="user-profile">
-          <span>ผู้ดูแลระบบ</span>
-          <button className="btn-logout" onClick={onLogout}>ออกจากระบบ</button>
+          <span>ผู้ดูแลระบบ (Admin)</span>
+          <button className="btn-logout" onClick={onLogout}>ออก</button>
         </div>
       </nav>
 
       <div className="main-container">
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2rem'}}>
-            <h2 style={{margin:0, fontSize:'1.75rem'}}>สรุปผลการอบรม (Training Matrix)</h2>
-            
-            {/* ปุ่ม Reset All */}
-            <div>
-                {!showConfirmReset ? (
-                    <button className="btn-danger" onClick={() => setShowConfirmReset(true)}>
-                       🗑️ รีเซ็ตข้อมูลทั้งหมด
-                    </button>
-                ) : (
-                    <div className="confirm-box">
-                        <span style={{color:'#b91c1c', fontWeight:'bold', fontSize:'0.9rem'}}>⚠️ ยืนยันลบ "ทุกคน"?</span>
-                        <button className="btn-confirm-yes" onClick={executeResetAll}>ยืนยัน</button>
-                        <button className="btn-confirm-no" onClick={() => setShowConfirmReset(false)}>ยกเลิก</button>
-                    </div>
-                )}
-            </div>
+        <div className="section-header" style={{textAlign:'left', marginBottom:'1.5rem'}}>
+          <h2 style={{margin:0}}>สรุปผลการฝึกอบรม (Training Summary)</h2>
+          <p>ข้อมูล ณ วันที่: {new Date().toLocaleDateString('th-TH', { dateStyle: 'long', timeStyle: 'short' })}</p>
         </div>
 
+        {/* 1. ส่วนแสดงสถิติ (KPIs Dashboard) */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon" style={{background:'#eff6ff', color:'#2563eb'}}>👥</div>
+            <div className="stat-info">
+              <h3>{stats.totalEmp}</h3>
+              <p>พนักงานทั้งหมด (คน)</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon" style={{background:'#dcfce7', color:'#166534'}}>✅</div>
+            <div className="stat-info">
+              <h3>{stats.percent}%</h3>
+              <p>ความสำเร็จภาพรวม</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon" style={{background:'#fff7ed', color:'#c2410c'}}>📚</div>
+            <div className="stat-info">
+              <h3>{stats.completedCount} / {stats.totalCourses}</h3>
+              <p>หลักสูตรที่ผ่านแล้ว (รายการ)</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. แถบเครื่องมือ (ค้นหา & ปุ่มพิมพ์) */}
+        <div className="toolbar">
+          <div className="search-box">
+            <span className="search-icon">🔍</span>
+            <input 
+              type="text" 
+              className="search-input"
+              placeholder="ค้นหาชื่อ หรือ รหัสพนักงาน..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div style={{display:'flex', gap:'10px'}}>
+             <button className="btn-print" onClick={handlePrint}>
+                🖨️ พิมพ์รายงาน (Audit Report)
+             </button>
+
+             {!showConfirmReset ? (
+                <button className="btn-danger" onClick={() => setShowConfirmReset(true)}>
+                    🗑️ รีเซ็ตระบบ
+                </button>
+             ) : (
+                <div className="confirm-box">
+                    <span>⚠️ ล้างข้อมูลทั้งหมด?</span>
+                    <button className="btn-confirm-yes" onClick={executeResetAll}>ยืนยัน</button>
+                    <button className="btn-confirm-no" onClick={() => setShowConfirmReset(false)}>ยกเลิก</button>
+                </div>
+             )}
+          </div>
+        </div>
+
+        {/* 3. ตารางข้อมูล (Matrix Table) */}
         <div className="table-container">
           <div style={{ overflowX: 'auto' }}>
             <table style={{ minWidth: '1000px' }}>
               <thead>
                 <tr>
                   <th style={{width:'10%'}}>รหัส</th>
-                  <th style={{width:'20%', textAlign:'left'}}>ชื่อ-นามสกุล</th>
+                  <th style={{width:'20%', textAlign:'left'}}>พนักงาน</th>
                   {ALL_COURSES.map(course => (
                     <th key={course.id} style={{textAlign:'center'}}>{course.name}</th>
                   ))}
-                  <th style={{textAlign:'center'}}>ใช้งานล่าสุด</th>
-                  <th style={{textAlign:'center'}}>จัดการ</th>
+                  <th style={{textAlign:'center', width:'10%'}}>จัดการ</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr><td colSpan={ALL_COURSES.length + 4} style={{padding:'2rem', textAlign:'center', color:'#64748b'}}>⏳ กำลังโหลดข้อมูล...</td></tr>
-                ) : employees.map(emp => (
+                  <tr><td colSpan={ALL_COURSES.length + 3} style={{padding:'2rem', textAlign:'center'}}>⏳ กำลังโหลดข้อมูล...</td></tr>
+                ) : filteredEmployees.map(emp => (
                   <tr key={emp.id}>
-                    <td style={{fontWeight:'600', color:'#64748b', textAlign:'center'}}>{emp.id}</td>
-                    <td style={{fontWeight:'500', color:'#1e293b'}}>{emp.name}</td>
+                    <td style={{fontWeight:'bold', textAlign:'center', color:'#64748b'}}>{emp.id}</td>
+                    <td>
+                      <div style={{fontWeight:'600'}}>{emp.name}</div>
+                      <div style={{fontSize:'0.8rem', color:'#94a3b8'}}>เข้าล่าสุด: {emp.lastSeen}</div>
+                    </td>
                     
                     {ALL_COURSES.map(course => {
-                      const status = emp.progress?.[course.id]; 
+                      const progress = emp.progress?.[course.id]; 
                       return (
-                          <td key={course.id} style={{textAlign:'center'}}>
-                            {(!status) ? (
-                                <span className="status-badge status-none" title="ยังไม่เรียน">•</span>
-                            ) : status.isCompleted ? (
-                                <span className="status-badge status-completed" title="ผ่านแล้ว">✓</span>
-                            ) : (
-                                <span className="status-badge status-pending" title="กำลังเรียน">!</span>
-                            )}
-                          </td>
+                        <td key={course.id} style={{textAlign:'center', verticalAlign:'middle'}}>
+                          {(!progress) ? (
+                              <span className="status-badge status-none">ยังไม่เริ่ม</span>
+                          ) : progress.isCompleted ? (
+                              <div>
+                                <span className="status-badge status-completed">✅ ผ่าน</span>
+                                {/* ถ้า Database เก็บวันที่จบ ให้แสดงตรงนี้ (สมมติว่า lastWatched คือวันที่) */}
+                                {/* <span className="date-label">05/01/26</span> */} 
+                              </div>
+                          ) : (
+                              <span className="status-badge status-pending">🟡 กำลังเรียน</span>
+                          )}
+                        </td>
                       );
                     })}
 
-                    <td style={{textAlign:'center', color:'#64748b', fontSize:'0.85rem'}}>{emp.lastSeen}</td>
                     <td style={{textAlign:'center'}}>
-                        <div style={{display:'flex', justifyContent:'center'}}>
-                            <button className="btn-reset" title="รีเซ็ตคนนี้" onClick={() => handleReset(emp.id, emp.name)}>
-                                🔄
-                            </button>
-                        </div>
+                        <button className="btn-reset" onClick={() => handleReset(emp.id, emp.name)} title="รีเซ็ตคนนี้">
+                            🔄
+                        </button>
                     </td>
                   </tr>
                 ))}
@@ -148,6 +221,24 @@ const Dashboard = ({ onLogout }) => {
             </table>
           </div>
         </div>
+
+        {/* 4. ส่วนท้ายสำหรับพิมพ์ (Signature Area) - จะเห็นเฉพาะตอน Print */}
+        <div className="print-footer">
+            <div style={{textAlign:'center', width:'30%'}}>
+                __________________________<br/>
+                ( ผู้จัดทำรายงาน )<br/>
+                เจ้าหน้าที่ความปลอดภัย (จป.)
+            </div>
+            <div style={{textAlign:'center', width:'30%'}}>
+                __________________________<br/>
+                ( ผู้อนุมัติ )<br/>
+                ผู้จัดการโรงงาน
+            </div>
+            <div style={{textAlign:'center', width:'30%'}}>
+                วันที่: _____/_____/_______
+            </div>
+        </div>
+
       </div>
     </div>
   );

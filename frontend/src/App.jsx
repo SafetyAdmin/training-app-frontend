@@ -40,7 +40,7 @@ function App() {
       category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
       icon: " 🖥️",
       title: "สถานีเรียนรู้ที่ 1 อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล",
-      url: "https://www.youtube.com/watch?v=vIDQ97nn9tY&list=PLtFvwvJL41rIcfuq4DguTM-geticaMHvn&index=1",
+      url: "https://www.youtube.com/watch?v=vIDQ97nn9tY&t=5s",
       duration: "09:07 วินาที"
     },
     {
@@ -48,7 +48,7 @@ function App() {
       category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
       icon: " 🖥️",
       title: "สถานีเรียนรู้ที่ 2 สีและเครื่องหมายเพื่อความปลอดภัย",
-      url: "https://www.youtube.com/watch?v=F4ysNeES1zE&list=PLtFvwvJL41rIcfuq4DguTM-geticaMHvn&index=2",
+      url: "https://www.youtube.com/watch?v=F4ysNeES1zE",
       duration: "08:18 วินาที"
     },
     {
@@ -56,7 +56,7 @@ function App() {
       category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
       icon: " 🖥️",
       title: "สถานีเรียนรู้ที่ 3 การปฏิบัติงานในที่อับอากาศ",
-      url: "https://www.youtube.com/watch?v=pkbEetW3ic4&list=PLtFvwvJL41rIcfuq4DguTM-geticaMHvn&index=3",
+      url: "https://www.youtube.com/watch?v=pkbEetW3ic4",
       duration: "11:58 วินาที"
     }
     ,
@@ -65,7 +65,7 @@ function App() {
       category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
       icon: " 🖥️",
       title: "สถานีเรียนรู้ที่ 4 อันตรายจากสารเคมี",
-      url: "https://www.youtube.com/watch?v=-zJ5IQAdcOo&list=PLtFvwvJL41rIcfuq4DguTM-geticaMHvn&index=4",
+      url: "https://www.youtube.com/watch?v=-zJ5IQAdcOo&t=1s",
       duration: "10:49 วินาที"
     }
   ];

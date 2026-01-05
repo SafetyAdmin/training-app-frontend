@@ -656,6 +656,27 @@ app.post('/api/admin/reset-progress', async (req, res) => {
   }
 });
 
+// API สำหรับรีเซ็ตข้อมูลการเรียนทั้งหมด
+app.delete('/api/reset-all-progress', async (req, res) => {
+    try {
+        // ⚠️ ตรงนี้ต้องแก้ตาม Database ที่คุณใช้นะครับ
+        // ตัวอย่างถ้าใช้ SQL:
+        // await db.query("DELETE FROM employee_progress"); 
+        
+        // ตัวอย่างถ้าใช้ MongoDB/Mongoose:
+        // await ProgressModel.deleteMany({}); 
+
+        // หรือถ้าใช้ตัวแปร array เก็บข้อมูลชั่วคราว (แบบ Memory):
+        // progressData = []; 
+
+        console.log("ล้างข้อมูลทั้งหมดเรียบร้อย");
+        res.json({ message: "Reset all progress successful" });
+    } catch (error) {
+        console.error("Error resetting progress:", error);
+        res.status(500).json({ error: "Failed to reset progress" });
+    }
+});
+
 // --- 4. Start Server ---
 const PORT = process.env.PORT || 3001; 
 app.listen(PORT, () => {

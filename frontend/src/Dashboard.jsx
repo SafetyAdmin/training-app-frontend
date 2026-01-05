@@ -62,6 +62,26 @@ const Dashboard = ({ onLogout }) => {
       <div className="main-container" style={{ maxWidth: '100%' }}>
         <h2 className="page-title">สรุปผลการอบรม (Training Matrix)</h2>
 
+        {/* ปุ่มรีเซ็ตวางไว้เหนือตาราง หรือข้างๆ หัวข้อ */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+          <button
+            onClick={handleResetAll}
+            style={{
+              backgroundColor: '#ef4444', // สีแดง
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+            }}
+          >
+            🗑️ รีเซ็ตข้อมูลทั้งหมด
+          </button>
+        </div>
+
         <div style={{ overflowX: 'auto', background: 'white', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1000px' }}>
             <thead>
@@ -114,5 +134,37 @@ const Dashboard = ({ onLogout }) => {
     </div>
   );
 };
+
+// ฟังก์ชันสำหรับปุ่ม Reset All
+  const handleResetAll = async () => {
+    // 1. แจ้งเตือนก่อนลบ (สำคัญมาก!)
+    const isConfirmed = window.confirm(
+      "⚠️ คำเตือน: คุณต้องการลบประวัติการเรียนของพนักงาน 'ทุกคน' ใช่ไหม?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้!"
+    );
+
+    if (isConfirmed) {
+      try {
+        // 2. ยิง API ไปที่ Backend (เปลี่ยน URL ให้ตรงกับเครื่องคุณ)
+        const response = await fetch('https://training-api-pvak.onrender.com/api/reset-all-progress', {
+          method: 'DELETE', // หรือ POST แล้วแต่ที่เขียนใน Backend
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          alert("✅ ล้างข้อมูลเรียบร้อยแล้ว");
+          // 3. โหลดข้อมูลตารางใหม่ (เรียกฟังก์ชันที่คุณใช้ดึงข้อมูลตอนแรก)
+          // fetchEmployees(); หรือ window.location.reload();
+          window.location.reload(); 
+        } else {
+          alert("❌ เกิดข้อผิดพลาด ไม่สามารถล้างข้อมูลได้");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert("❌ เชื่อมต่อ Server ไม่ได้");
+      }
+    }
+  };
 
 export default Dashboard;

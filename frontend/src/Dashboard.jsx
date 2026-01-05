@@ -89,8 +89,55 @@ const Dashboard = ({ onLogout }) => {
   };
 
   // 🖨️ ฟังก์ชันสั่งพิมพ์
+  // 🖨️ ฟังก์ชันสั่งพิมพ์แบบมืออาชีพ (เปิดหน้าต่างใหม่)
   const handlePrint = () => {
-    window.print();
+    // 1. เลือกส่วนที่จะพิมพ์ (ในที่นี้คือ main-container)
+    const printContent = document.querySelector('.main-container').innerHTML;
+    
+    // 2. เปิดหน้าต่างใหม่
+    const printWindow = window.open('', '', 'height=600,width=800');
+    
+    // 3. เขียน HTML ลงไปในหน้าต่างใหม่
+    printWindow.document.write('<html><head><title>Training Audit Report</title>');
+    
+    // (สำคัญ) ดึง CSS เดิมมาใช้ด้วย เพื่อให้สวยเหมือนหน้าเว็บ
+    const styles = Array.from(document.styleSheets)
+      .map(styleSheet => {
+        try {
+          return Array.from(styleSheet.cssRules)
+            .map(rule => rule.cssText)
+            .join('');
+        } catch (e) {
+          return '';
+        }
+      })
+      .join('');
+    printWindow.document.write(`<style>${styles}</style>`);
+    
+    // เพิ่ม CSS เฉพาะกิจสำหรับหน้าต่างพิมพ์
+    printWindow.document.write(`
+      <style>
+        body { background: white; padding: 20px; font-family: 'Sarabun', sans-serif; }
+        .navbar, .btn-print, .btn-danger, .search-box, .status-badge { display: none !important; } /* ซ่อนปุ่ม */
+        .table-container { box-shadow: none; border: 1px solid #000; }
+        th, td { border: 1px solid #000; padding: 8px; color: black; }
+        .print-footer { display: flex !important; margin-top: 50px; } /* โชว์ลายเซ็น */
+      </style>
+    `);
+    
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(printContent);
+    printWindow.document.write('</body></html>');
+    
+    // 4. สั่งพิมพ์และปิดเมื่อเสร็จ
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // รอโหลดรูป/ฟอนต์นิดนึงแล้วค่อยสั่งพิมพ์
+    setTimeout(() => {
+      printWindow.print();
+      // printWindow.close(); // ถ้าอยากให้พิมพ์เสร็จแล้วปิดเลย ให้เอา comment ออก
+    }, 500);
   };
 
   return (

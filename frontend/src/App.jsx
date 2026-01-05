@@ -34,6 +34,39 @@ function App() {
       title: "หัวข้อวิชาที่ 3   ข้อบังคับว่าด้วยความปลอดภัย อาชีวอนามัย และสภาพแวดล้อมในการทำงาน",
       url: "https://youtu.be/YF9Bef5Oq0Q",
       duration: "2:34:56 วินาที"
+    },
+    {
+      id: "MC001",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 1 อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล",
+      url: "https://www.youtube.com/watch?v=vIDQ97nn9tY&list=PLtFvwvJL41rIcfuq4DguTM-geticaMHvn&index=1",
+      duration: "09:07 วินาที"
+    },
+    {
+      id: "MC002",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 2 สีและเครื่องหมายเพื่อความปลอดภัย",
+      url: "https://www.youtube.com/watch?v=F4ysNeES1zE&list=PLtFvwvJL41rIcfuq4DguTM-geticaMHvn&index=2",
+      duration: "08:18 วินาที"
+    },
+    {
+      id: "MC003",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 3 การปฏิบัติงานในที่อับอากาศ",
+      url: "https://www.youtube.com/watch?v=pkbEetW3ic4&list=PLtFvwvJL41rIcfuq4DguTM-geticaMHvn&index=3",
+      duration: "11:58 วินาที"
+    }
+    ,
+    {
+      id: "MC004",
+      category: "🖥️ สถานีเรียนรู้", // ชื่อหมวด
+      icon: " 🖥️",
+      title: "สถานีเรียนรู้ที่ 4 อันตรายจากสารเคมี",
+      url: "https://www.youtube.com/watch?v=-zJ5IQAdcOo&list=PLtFvwvJL41rIcfuq4DguTM-geticaMHvn&index=4",
+      duration: "10:49 วินาที"
     }
   ];
 

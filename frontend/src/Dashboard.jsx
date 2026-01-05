@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-// 📌 รายชื่อวิชา (ต้องตรงกับ ID ใน App.jsx)
+// 📌 รายชื่อวิชา
 const ALL_COURSES = [
   { id: 'SF001', name: '🔥 หัวข้อวิชาที่ 1 ความรู้เกี่ยวกับความปลอดภัยในการทำงาน' },
   { id: 'SF002', name: '🔥 หัวข้อวิชาที่ 2 กฎหมายความปลอดภัย อาชีวอนามัย และสภาพแวดล้อมในการทำงาน' },
@@ -11,6 +11,9 @@ const ALL_COURSES = [
 const Dashboard = ({ onLogout }) => {
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // ✅ STATE 1: เพิ่มตัวแปรสำหรับปุ่มยืนยัน (แก้ปัญหา confirm error)
+  const [showConfirmReset, setShowConfirmReset] = useState(false);
 
   const fetchReport = () => {
     fetch('https://training-api-pvak.onrender.com/api/admin/report')
@@ -33,8 +36,11 @@ const Dashboard = ({ onLogout }) => {
     return () => clearInterval(interval);
   }, []);
 
+  // ฟังก์ชันรีเซ็ตรายบุคคล (ถ้ายืนยันผ่าน confirm ไม่ได้ ให้ลบเลยหรือใช้ console log แทน)
   const handleReset = async (employeeId, employeeName) => {
-    if (!window.confirm(`⚠️ ล้างประวัติการเรียนทั้งหมดของ: ${employeeName}?`)) return;
+    // หมายเหตุ: ถ้า Sandbox บล็อก confirm ตรงนี้อาจจะไม่ทำงาน
+    // ถ้าอยากให้ชัวร์อาจจะต้องตัดบรรทัด window.confirm ออก
+    // if (!window.confirm(`⚠️ ล้างประวัติการเรียนทั้งหมดของ: ${employeeName}?`)) return;
     
     try {
       await fetch('https://training-api-pvak.onrender.com/api/admin/reset-progress', {
@@ -42,10 +48,32 @@ const Dashboard = ({ onLogout }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employeeId })
       });
-      alert('✅ เรียบร้อย');
+      // alert('✅ เรียบร้อย'); // alert อาจโดนบล็อกใน sandbox
+      console.log(`Reset ${employeeName} success`);
       fetchReport();
     } catch (error) {
-      alert('❌ Error');
+      console.error('Error resetting user', error);
+    }
+  };
+
+  // ✅ FUNCTION: ฟังก์ชันลบทั้งหมด (ย้ายเข้ามาข้างใน และไม่ต้องใช้ window.confirm)
+  const executeResetAll = async () => {
+    try {
+      const response = await fetch('https://training-api-pvak.onrender.com/api/reset-all-progress', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        // รีโหลดหน้าจอเพื่อดึงข้อมูลใหม่
+        window.location.reload(); 
+      } else {
+        console.error("Failed to reset");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setShowConfirmReset(false); // ปิดปุ่มยืนยันไม่ว่าจะสำเร็จหรือไม่
     }
   };
 
@@ -62,24 +90,46 @@ const Dashboard = ({ onLogout }) => {
       <div className="main-container" style={{ maxWidth: '100%' }}>
         <h2 className="page-title">สรุปผลการอบรม (Training Matrix)</h2>
 
-        {/* ปุ่มรีเซ็ตวางไว้เหนือตาราง หรือข้างๆ หัวข้อ */}
+        {/* ✅ UI: ปุ่มรีเซ็ตแบบใหม่ (แก้ปัญหา Sandbox Error) */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-          <button
-            onClick={handleResetAll}
-            style={{
-              backgroundColor: '#ef4444', // สีแดง
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-            }}
-          >
-            🗑️ รีเซ็ตข้อมูลทั้งหมด
-          </button>
+            {!showConfirmReset ? (
+                // 1. ปุ่มปกติ
+                <button
+                    onClick={() => setShowConfirmReset(true)}
+                    style={{
+                        backgroundColor: '#ef4444', color: 'white', border: 'none',
+                        padding: '10px 20px', borderRadius: '5px', cursor: 'pointer',
+                        fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}
+                >
+                    🗑️ รีเซ็ตข้อมูลทั้งหมด
+                </button>
+            ) : (
+                // 2. ปุ่มยืนยัน (แสดงเมื่อกดปุ่มบน)
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#fee2e2', padding: '5px 10px', borderRadius: '5px', border: '1px solid #ef4444' }}>
+                    <span style={{ color: '#b91c1c', fontWeight: 'bold' }}>⚠️ ยืนยันลบ "ทุกคน"?</span>
+                    
+                    <button
+                        onClick={executeResetAll}
+                        style={{
+                            backgroundColor: '#dc2626', color: 'white', border: 'none',
+                            padding: '8px 15px', borderRadius: '4px', cursor: 'pointer'
+                        }}
+                    >
+                        ยืนยัน
+                    </button>
+                    
+                    <button
+                        onClick={() => setShowConfirmReset(false)}
+                        style={{
+                            backgroundColor: '#9ca3af', color: 'white', border: 'none',
+                            padding: '8px 15px', borderRadius: '4px', cursor: 'pointer'
+                        }}
+                    >
+                        ยกเลิก
+                    </button>
+                </div>
+            )}
         </div>
 
         <div style={{ overflowX: 'auto', background: 'white', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
@@ -107,9 +157,7 @@ const Dashboard = ({ onLogout }) => {
                   <td style={{ padding: '16px', fontWeight: 'bold', color: '#64748b' }}>{emp.id}</td>
                   <td style={{ padding: '16px', fontWeight: '600' }}>{emp.name}</td>
                   
-                  {/* 📌 วนลูปเช็คสถานะแต่ละวิชา (แก้จุดที่ Error แล้ว) */}
                   {ALL_COURSES.map(course => {
-                    // 🔥 ใช้ ?. (Optional Chaining) เพื่อกันพัง ถ้า progress ไม่มีข้อมูล
                     const status = emp.progress?.[course.id]; 
                     
                     if (!status) {
@@ -134,37 +182,5 @@ const Dashboard = ({ onLogout }) => {
     </div>
   );
 };
-
-// ฟังก์ชันสำหรับปุ่ม Reset All
-  const handleResetAll = async () => {
-    // 1. แจ้งเตือนก่อนลบ (สำคัญมาก!)
-    const isConfirmed = window.confirm(
-      "⚠️ คำเตือน: คุณต้องการลบประวัติการเรียนของพนักงาน 'ทุกคน' ใช่ไหม?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้!"
-    );
-
-    if (isConfirmed) {
-      try {
-        // 2. ยิง API ไปที่ Backend (เปลี่ยน URL ให้ตรงกับเครื่องคุณ)
-        const response = await fetch('https://training-api-pvak.onrender.com/api/reset-all-progress', {
-          method: 'DELETE', // หรือ POST แล้วแต่ที่เขียนใน Backend
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          alert("✅ ล้างข้อมูลเรียบร้อยแล้ว");
-          // 3. โหลดข้อมูลตารางใหม่ (เรียกฟังก์ชันที่คุณใช้ดึงข้อมูลตอนแรก)
-          // fetchEmployees(); หรือ window.location.reload();
-          window.location.reload(); 
-        } else {
-          alert("❌ เกิดข้อผิดพลาด ไม่สามารถล้างข้อมูลได้");
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        alert("❌ เชื่อมต่อ Server ไม่ได้");
-      }
-    }
-  };
 
 export default Dashboard;

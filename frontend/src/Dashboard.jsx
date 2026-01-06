@@ -88,16 +88,25 @@ const Dashboard = ({ onLogout }) => {
       message: `คุณต้องการลบ "${name}" (${id}) ใช่หรือไม่?\nข้อมูลการเรียนทั้งหมดจะหายไป`,
       action: async () => {
         try {
-          const res = await fetch('https://training-api-pvak.onrender.com/api/admin/delete-employee', {
+          // ✅ แก้ไข: ส่ง ID ไปที่ URL โดยตรง
+          const res = await fetch(`https://training-api-pvak.onrender.com/api/admin/delete-employee/${id}`, {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ employeeId: id })
+            headers: { 'Content-Type': 'application/json' }
+            // ไม่ต้องมี body แล้ว
           });
-          if (res.ok) {
+          
+          const data = await res.json(); // อ่าน response เพื่อดู error message ถ้ามี
+
+          if (res.ok && data.success) {
             showToast('success', "🗑️ ลบข้อมูลเรียบร้อย");
-            fetchReport();
+            fetchReport(); // ดึงข้อมูลใหม่ทันที
+          } else {
+            showToast('error', `❌ ลบไม่ได้: ${data.message || 'ไม่ทราบสาเหตุ'}`);
           }
-        } catch (error) { showToast('error', "Failed to delete"); }
+        } catch (error) { 
+            console.error(error);
+            showToast('error', "Failed to delete (Server Error)"); 
+        }
         setConfirmModal(null); 
       }
     });

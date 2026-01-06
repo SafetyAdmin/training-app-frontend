@@ -671,6 +671,18 @@ app.delete('/api/reset-all-progress', async (req, res) => {
     }
 });
 
+// 3.7 API ดึงประวัติการเรียนของพนักงานคนเดียว (สำหรับหน้า My Learning)
+app.get('/api/my-learning/:employeeId', async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        // ค้นหาประวัติการเรียนทั้งหมดของรหัสพนักงานนี้
+        const history = await Progress.find({ employeeId });
+        res.json({ success: true, data: history });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // --- 4. Start Server ---
 const PORT = process.env.PORT || 3001; 
 app.listen(PORT, () => {

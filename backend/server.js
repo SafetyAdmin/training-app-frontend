@@ -124,6 +124,40 @@ app.post('/api/admin/reset-progress', async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
 
+// 1. API เพิ่มพนักงานใหม่
+app.post('/api/admin/add-employee', async (req, res) => {
+  const { employeeId, name } = req.body;
+  try {
+    // เช็คก่อนว่ามีรหัสนี้หรือยัง
+    const existing = await Employee.findOne({ employeeId });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'รหัสพนักงานนี้มีอยู่แล้ว' });
+    }
+
+    const newEmp = new Employee({ employeeId, name });
+    await newEmp.save();
+    
+    res.json({ success: true, message: 'เพิ่มพนักงานเรียบร้อย' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2. API ลบพนักงาน (ลาออก)
+app.delete('/api/admin/delete-employee', async (req, res) => {
+  const { employeeId } = req.body;
+  try {
+    // ลบข้อมูลพนักงาน
+    await Employee.deleteOne({ employeeId });
+    // ลบประวัติการเรียนของคนนั้นด้วย (เพื่อให้ Report สะอาด)
+    await Progress.deleteMany({ employeeId });
+    
+    res.json({ success: true, message: 'ลบข้อมูลพนักงานเรียบร้อย' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Reset ทั้งหมด
 app.delete('/api/reset-all-progress', async (req, res) => {
     try {

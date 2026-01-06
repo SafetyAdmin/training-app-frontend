@@ -12,14 +12,23 @@ function App() {
 
   // --- ข้อมูลคอร์ส (ชุดเดิม) ---
   const courses = [
-    { id: "SF001", category: "หมวดความปลอดภัย (Safety)", icon: "🔥", title: "ความรู้เกี่ยวกับความปลอดภัยในการทำงาน", url: "https://youtu.be/jH4ZRU7Q4VA", duration: "1 ชม. 25 น." },
-    { id: "SF002", category: "หมวดความปลอดภัย (Safety)", icon: "🔥", title: "กฎหมายความปลอดภัย อาชีวอนามัย", url: "https://youtu.be/czC6QY27rto", duration: "1 ชม. 43 น." },
-    { id: "SF003", category: "หมวดความปลอดภัย (Safety)", icon: "🔥", title: "ข้อบังคับว่าด้วยความปลอดภัย", url: "https://youtu.be/YF9Bef5Oq0Q", duration: "2 ชม. 34 น." },
-    { id: "MC001", category: "สถานีเรียนรู้ (Stations)", icon: "🦺", title: "อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล", url: "https://www.youtube.com/watch?v=vIDQ97nn9tY", duration: "09:07 น." },
-    { id: "MC004", category: "สถานีเรียนรู้ (Stations)", icon: "☠️", title: "อันตรายจากสารเคมี", url: "https://www.youtube.com/watch?v=-zJ5IQAdcOo", duration: "10:49 น." },
-    { id: "MC007", category: "สถานีเรียนรู้ (Stations)", icon: "⚡", title: "อันตรายจากไฟฟ้า", url: "https://www.youtube.com/watch?v=FoTdek_K-nY", duration: "10:24 น." },
-    { id: "S501", category: "5ส เพื่อเพิ่มผลผลิต (5S)", icon: "🧹", title: "5ส เพื่อเพิ่มผลผลิต ตอนที่ 1", url: "https://www.youtube.com/watch?v=6lAoHEIRXLg", duration: "1 ชม. 48 น." },
-    { id: "S502", category: "5ส เพื่อเพิ่มผลผลิต (5S)", icon: "🧹", title: "5ส เพื่อเพิ่มผลผลิต ตอนที่ 2", url: "https://www.youtube.com/watch?v=ZoLQu1Dlifw", duration: "1 ชม. 40 น." }
+    { id: "SF001", category: "🔥 หมวดความปลอดภัย (Safety)", icon: "🔥", title: "หัวข้อวิชาที่ 1 ความรู้เกี่ยวกับความปลอดภัยในการทำงาน", url: "https://youtu.be/jH4ZRU7Q4VA", duration: "1 ชม. 25 น." },
+    { id: "SF002", category: "🔥 หมวดความปลอดภัย (Safety)", icon: "🔥", title: "หัวข้อวิชาที่ 2 กฎหมายความปลอดภัย อาชีวอนามัย", url: "https://youtu.be/czC6QY27rto", duration: "1 ชม. 43 น." },
+    { id: "SF003", category: "🔥 หมวดความปลอดภัย (Safety)", icon: "🔥", title: "หัวข้อวิชาที่ 3 ข้อบังคับว่าด้วยความปลอดภัย", url: "https://youtu.be/YF9Bef5Oq0Q", duration: "2 ชม. 34 น." },
+    { id: "MC001", category: "🖥️ สถานีเรียนรู้", icon: "🦺", title: "สถานีเรียนรู้ที่ 1 อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล", url: "https://www.youtube.com/watch?v=vIDQ97nn9tY&t=5s", duration: "09:07 น." },
+    { id: "MC002", category: "🖥️ สถานีเรียนรู้", icon: "⚠️", title: "สถานีเรียนรู้ที่ 2 สีและเครื่องหมายเพื่อความปลอดภัย", url: "https://www.youtube.com/watch?v=F4ysNeES1zE", duration: "08:18 น." },
+    { id: "MC003", category: "🖥️ สถานีเรียนรู้", icon: "🕳️", title: "สถานีเรียนรู้ที่ 3 การปฏิบัติงานในที่อับอากาศ", url: "https://www.youtube.com/watch?v=pkbEetW3ic4", duration: "11:58 น." },
+    { id: "MC004", category: "🖥️ สถานีเรียนรู้", icon: "☠️", title: "สถานีเรียนรู้ที่ 4 อันตรายจากสารเคมี", url: "https://www.youtube.com/watch?v=-zJ5IQAdcOo&t=1s", duration: "10:49 น." },
+    { id: "MC005", category: "🖥️ สถานีเรียนรู้", icon: "📢", title: "สถานีเรียนรู้ที่ 5 การสื่อสารความเป็นอันตราย", url: "https://www.youtube.com/watch?v=kwSFo2w-V5w", duration: "09:30 น." },
+    { id: "MC006", category: "🖥️ สถานีเรียนรู้", icon: "🔒", title: "สถานีเรียนรู้ที่ 6 การตัดแยกอุปกรณ์", url: "https://www.youtube.com/watch?v=YacumV_Zg7M", duration: "08:26 น." },
+    { id: "MC007", category: "🖥️ สถานีเรียนรู้", icon: "⚡", title: "สถานีเรียนรู้ที่ 7 อันตรายจากไฟฟ้า", url: "https://www.youtube.com/watch?v=FoTdek_K-nY", duration: "10:24 น." },
+    { id: "MC008", category: "🖥️ สถานีเรียนรู้", icon: "⚙️", title: "สถานีเรียนรู้ที่ 8 ความปลอดภัยในการทำงานกับเครื่องจักร", url: "https://www.youtube.com/watch?v=hb8b9XWCLCc", duration: "10:24 น." },
+    { id: "MC009", category: "🖥️ สถานีเรียนรู้", icon: "🔥", title: "สถานีเรียนรู้ที่ 9 ความปลอดภัยในงานเชื่อม", url: "https://www.youtube.com/watch?v=3Ip4kW1UwKQ", duration: "10:20 น." },
+    { id: "MC010", category: "🖥️ สถานีเรียนรู้", icon: "📦", title: "สถานีเรียนรู้ที่ 10 การยกย้ายวัสดุสิ่งของด้วยแรงคน", url: "https://www.youtube.com/watch?v=ZTQGeb2s_Z0", duration: "08:13 น." },
+    { id: "MC011", category: "🖥️ สถานีเรียนรู้", icon: "🏗️", title: "สถานีเรียนรู้ที่ 11 การทำงานบนที่สูง", url: "https://www.youtube.com/watch?v=HfMtHovAVTk", duration: "10:45 น." },
+    { id: "S501", category: "🗑️ 5ส เพื่อเพิ่มผลผลิต", icon: "🧹", title: "5ส เพื่อเพิ่มผลผลิต สำหรับอุตสาหกรรม ตอนที่ 1", url: "https://www.youtube.com/watch?v=6lAoHEIRXLg", duration: "1 ชม. 48 น." },
+    { id: "S502", category: "🗑️ 5ส เพื่อเพิ่มผลผลิต", icon: "🧹", title: "5ส เพื่อเพิ่มผลผลิต สำหรับอุตสาหกรรม ตอนที่ 2", url: "https://www.youtube.com/watch?v=ZoLQu1Dlifw", duration: "1 ชม. 40 น." },
+    { id: "S503", category: "🗑️ 5ส เพื่อเพิ่มผลผลิต", icon: "🧹", title: "5ส เพื่อเพิ่มผลผลิต สำหรับอุตสาหกรรม ตอนที่ 3", url: "https://www.youtube.com/watch?v=MCpZB8AdN7o", duration: "1 ชม. 48 น." }
   ];
 
   // 1. ดึงชื่อหมวดหมู่ทั้งหมด
@@ -55,9 +64,20 @@ function App() {
           </div>
         </div>
         <div className="nav-right">
-          <button className="icon-btn">🔍</button>
-          <button className="icon-btn">🔔</button>
+          
+          {/* ส่วนแสดงชื่อและตำแหน่ง */}
+          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2', marginRight: '8px'}}>
+            <span style={{fontWeight: '600', color: '#374151', fontSize: '0.95rem'}}>
+              {user.name} {/* ชื่อพนักงาน */}
+            </span>
+            <span style={{fontSize: '0.75rem', color: '#6b7280'}}>
+              พนักงาน {/* หรือจะใส่ user.id ก็ได้ */}
+            </span>
+          </div>
+
+          {/* วงกลมรูปโปรไฟล์ (คงเดิม) */}
           <div className="profile-circle" title={user.name}></div>
+          
         </div>
       </nav>
 

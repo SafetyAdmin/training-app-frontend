@@ -144,16 +144,21 @@ app.post('/api/admin/add-employee', async (req, res) => {
 });
 
 // 2. API ลบพนักงาน (ลาออก)
-app.delete('/api/admin/delete-employee', async (req, res) => {
-  const { employeeId } = req.body;
+app.delete('/api/admin/delete-employee/:employeeId', async (req, res) => {
   try {
-    // ลบข้อมูลพนักงาน
-    await Employee.deleteOne({ employeeId });
-    // ลบประวัติการเรียนของคนนั้นด้วย (เพื่อให้ Report สะอาด)
+    const { employeeId } = req.params; // รับจาก URL
+    console.log("🗑️ Request delete for:", employeeId); // Log ดูว่า id มาไหม
+
+    const result = await Employee.deleteOne({ employeeId });
     await Progress.deleteMany({ employeeId });
     
+    if (result.deletedCount === 0) {
+        return res.status(404).json({ success: false, message: "ไม่พบรหัสพนักงานนี้ในระบบ" });
+    }
+
     res.json({ success: true, message: 'ลบข้อมูลพนักงานเรียบร้อย' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

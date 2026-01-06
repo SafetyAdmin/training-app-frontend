@@ -592,7 +592,7 @@ app.get('/api/setup-employees', async (req, res) => {
 
     try {
         for (const data of employees) {
-            // Upsert: อัปเดตถ้ามี สร้างใหม่ถ้าไม่มี
+            // Upsert: .อัปเดตถ้ามี สร้างใหม่ถ้าไม่มี
             await Employee.findOneAndUpdate({ employeeId: data.employeeId }, data, { upsert: true });
         }
         res.send(`✅ อัปเดตรายชื่อพนักงานจำนวน ${employees.length} คน เรียบร้อยแล้ว!`);

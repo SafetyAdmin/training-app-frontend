@@ -11,34 +11,30 @@ function App() {
   const [activeTab, setActiveTab] = useState('Class'); 
   const [myProgress, setMyProgress] = useState([]);    
   const [activeCategory, setActiveCategory] = useState('All');
+  
+  // ✅ เปลี่ยน: สร้าง State สำหรับเก็บรายชื่อคอร์ส (เริ่มเป็นค่าว่าง)
+  const [courses, setCourses] = useState([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
 
-  // ข้อมูลคอร์ส (ชุดเดิม)
-  const courses = [
-    { id: "SF001", category: "🔥 หมวดความปลอดภัย (Safety)", icon: "🔥", title: "หัวข้อวิชาที่ 1 ความรู้เกี่ยวกับความปลอดภัยในการทำงาน", url: "https://youtu.be/jH4ZRU7Q4VA", duration: "1 ชม. 25 น." },
-    { id: "SF002", category: "🔥 หมวดความปลอดภัย (Safety)", icon: "🔥", title: "หัวข้อวิชาที่ 2 กฎหมายความปลอดภัย อาชีวอนามัย", url: "https://youtu.be/czC6QY27rto", duration: "1 ชม. 43 น." },
-    { id: "SF003", category: "🔥 หมวดความปลอดภัย (Safety)", icon: "🔥", title: "หัวข้อวิชาที่ 3 ข้อบังคับว่าด้วยความปลอดภัย", url: "https://youtu.be/YF9Bef5Oq0Q", duration: "2 ชม. 34 น." },
-    { id: "MC001", category: "🖥️ สถานีเรียนรู้", icon: "🦺", title: "สถานีเรียนรู้ที่ 1 อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล", url: "https://www.youtube.com/watch?v=vIDQ97nn9tY&t=5s", duration: "09:07 น." },
-    { id: "MC002", category: "🖥️ สถานีเรียนรู้", icon: "⚠️", title: "สถานีเรียนรู้ที่ 2 สีและเครื่องหมายเพื่อความปลอดภัย", url: "https://www.youtube.com/watch?v=F4ysNeES1zE", duration: "08:18 น." },
-    { id: "MC003", category: "🖥️ สถานีเรียนรู้", icon: "🕳️", title: "สถานีเรียนรู้ที่ 3 การปฏิบัติงานในที่อับอากาศ", url: "https://www.youtube.com/watch?v=pkbEetW3ic4", duration: "11:58 น." },
-    { id: "MC004", category: "🖥️ สถานีเรียนรู้", icon: "☠️", title: "สถานีเรียนรู้ที่ 4 อันตรายจากสารเคมี", url: "https://www.youtube.com/watch?v=-zJ5IQAdcOo&t=1s", duration: "10:49 น." },
-    { id: "MC005", category: "🖥️ สถานีเรียนรู้", icon: "📢", title: "สถานีเรียนรู้ที่ 5 การสื่อสารความเป็นอันตราย", url: "https://www.youtube.com/watch?v=kwSFo2w-V5w", duration: "09:30 น." },
-    { id: "MC006", category: "🖥️ สถานีเรียนรู้", icon: "🔒", title: "สถานีเรียนรู้ที่ 6 การตัดแยกอุปกรณ์", url: "https://www.youtube.com/watch?v=YacumV_Zg7M", duration: "08:26 น." },
-    { id: "MC007", category: "🖥️ สถานีเรียนรู้", icon: "⚡", title: "สถานีเรียนรู้ที่ 7 อันตรายจากไฟฟ้า", url: "https://www.youtube.com/watch?v=FoTdek_K-nY", duration: "10:24 น." },
-    { id: "MC008", category: "🖥️ สถานีเรียนรู้", icon: "⚙️", title: "สถานีเรียนรู้ที่ 8 ความปลอดภัยในการทำงานกับเครื่องจักร", url: "https://www.youtube.com/watch?v=hb8b9XWCLCc", duration: "10:24 น." },
-    { id: "MC009", category: "🖥️ สถานีเรียนรู้", icon: "🔥", title: "สถานีเรียนรู้ที่ 9 ความปลอดภัยในงานเชื่อม", url: "https://www.youtube.com/watch?v=3Ip4kW1UwKQ", duration: "10:20 น." },
-    { id: "MC010", category: "🖥️ สถานีเรียนรู้", icon: "📦", title: "สถานีเรียนรู้ที่ 10 การยกย้ายวัสดุสิ่งของด้วยแรงคน", url: "https://www.youtube.com/watch?v=ZTQGeb2s_Z0", duration: "08:13 น." },
-    { id: "MC011", category: "🖥️ สถานีเรียนรู้", icon: "🏗️", title: "สถานีเรียนรู้ที่ 11 การทำงานบนที่สูง", url: "https://www.youtube.com/watch?v=HfMtHovAVTk", duration: "10:45 น." },
-    { id: "S501", category: "🗑️ 5ส เพื่อเพิ่มผลผลิต", icon: "🧹", title: "5ส เพื่อเพิ่มผลผลิต สำหรับอุตสาหกรรม ตอนที่ 1", url: "https://www.youtube.com/watch?v=6lAoHEIRXLg", duration: "1 ชม. 48 น." },
-    { id: "S502", category: "🗑️ 5ส เพื่อเพิ่มผลผลิต", icon: "🧹", title: "5ส เพื่อเพิ่มผลผลิต สำหรับอุตสาหกรรม ตอนที่ 2", url: "https://www.youtube.com/watch?v=ZoLQu1Dlifw", duration: "1 ชม. 40 น." },
-    { id: "S503", category: "🗑️ 5ส เพื่อเพิ่มผลผลิต", icon: "🧹", title: "5ส เพื่อเพิ่มผลผลิต สำหรับอุตสาหกรรม ตอนที่ 3", url: "https://www.youtube.com/watch?v=MCpZB8AdN7o", duration: "1 ชม. 48 น." }
-  ];
+  // ✅ EFFECT 1: ดึงรายชื่อคอร์สจาก Server (ทำงานเมื่อเข้าเว็บครั้งแรก)
+  useEffect(() => {
+    fetch('https://training-api-pvak.onrender.com/api/courses')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+            setCourses(data.data);
+        }
+        setIsLoadingCourses(false);
+      })
+      .catch(err => {
+          console.error("Failed to load courses", err);
+          setIsLoadingCourses(false);
+      });
+  }, []);
 
-  const categories = useMemo(() => [...new Set(courses.map(c => c.category))], [courses]);
-
-  // ✅ EFFECT: ดึงข้อมูลจาก Server จริง (Render)
+  // ✅ EFFECT 2: ดึงประวัติการเรียน (My Progress)
   useEffect(() => {
     if (user && activeTab === 'MyLearning') {
-      // ใช้ URL ของ Render ตามที่คุณต้องการ
       fetch(`https://training-api-pvak.onrender.com/api/my-learning/${user.employeeId}`) 
         .then(res => res.json())
         .then(data => {
@@ -48,6 +44,10 @@ function App() {
     }
   }, [user, activeTab]);
 
+  // คำนวณหมวดหมู่ (Categories) จากข้อมูลจริงที่ได้จาก DB
+  const categories = useMemo(() => [...new Set(courses.map(c => c.category))], [courses]);
+
+  // จัดกลุ่มคอร์สตามหมวดหมู่
   const groupedCourses = useMemo(() => {
     const groups = {};
     courses.forEach(course => {
@@ -59,6 +59,7 @@ function App() {
     return groups;
   }, [courses, activeCategory]);
 
+  // กรองคอร์สสำหรับหน้า My Learning
   const myLearningCourses = useMemo(() => {
     if (activeTab !== 'MyLearning') return [];
     return courses.filter(course => {
@@ -70,14 +71,20 @@ function App() {
     });
   }, [courses, myProgress, activeTab]);
 
+  // --- Render Section ---
+
+  // 1. ถ้ายังไม่ Login
   if (!user) return <Login onLogin={(u) => setUser(u)} />;
+
+  // 2. ถ้าเป็น Admin
   if (user.role === 'admin') return <Dashboard onLogout={() => setUser(null)} />;
 
+  // 3. ถ้าเป็นพนักงาน (หน้าเรียน)
   return (
     <div>
       <nav className="navbar">
         <div className="nav-left">
-          <div className="brand-logo">SEC Learning Center</div>
+          <div className="brand-logo">🏭 SEC Learning Center</div>
           <div className="nav-menu">
             <span onClick={() => setActiveTab('Class')} style={activeTab === 'Class' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}>Class</span>
             <span onClick={() => setActiveTab('MyLearning')} style={activeTab === 'MyLearning' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}>My Learning</span>
@@ -92,15 +99,9 @@ function App() {
           <button 
             onClick={() => setUser(null)}
             style={{
-              marginLeft: '10px',
-              padding: '6px 12px',
-              border: '1px solid #fee2e2',
-              backgroundColor: '#fff1f2',
-              color: '#ef4444',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: '500'
+              marginLeft: '10px', padding: '6px 12px', border: '1px solid #fee2e2',
+              backgroundColor: '#fff1f2', color: '#ef4444', borderRadius: '6px',
+              cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500'
             }}
           >
             ออก
@@ -111,18 +112,35 @@ function App() {
       <div className="dashboard-container">
         {!selectedCourse ? (
           <>
+            {/* --- TAB: CLASS --- */}
             {activeTab === 'Class' && (
               <>
-                <div className="category-filter-scroll">
-                  <div className={`filter-card ${activeCategory === 'All' ? 'active' : ''}`} onClick={() => setActiveCategory('All')} style={{background: '#374151'}}>
-                    <h4>Show All Resources</h4><span>{courses.length} courses</span>
-                  </div>
-                  {categories.map(cat => (
-                    <div key={cat} className={`filter-card ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
-                      <h4>{cat}</h4><span>{courses.filter(c => c.category === cat).length} courses</span>
+                {/* Loading State */}
+                {isLoadingCourses && (
+                    <div style={{textAlign:'center', padding:'2rem', color:'#6b7280'}}>
+                        ⏳ กำลังโหลดรายชื่อวิชาจากระบบ...
                     </div>
-                  ))}
-                </div>
+                )}
+
+                {/* Categories Scroll */}
+                {!isLoadingCourses && (
+                    <div className="category-filter-scroll">
+                    <div className={`filter-card ${activeCategory === 'All' ? 'active' : ''}`} onClick={() => setActiveCategory('All')} style={{background: '#374151'}}>
+                        <h4>Show All Resources</h4><span>{courses.length} courses</span>
+                    </div>
+                    {categories.map(cat => (
+                        <div key={cat} className={`filter-card ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
+                        <h4>{cat}</h4><span>{courses.filter(c => c.category === cat).length} courses</span>
+                        </div>
+                    ))}
+                    </div>
+                )}
+
+                {/* Course Groups */}
+                {!isLoadingCourses && courses.length === 0 && (
+                    <div style={{textAlign:'center', marginTop:'2rem'}}>🚫 ไม่พบวิชาในระบบ (กรุณาแจ้ง Admin)</div>
+                )}
+
                 <h3 className="section-title">Category Group</h3>
                 <div className="groups-grid">
                   {Object.keys(groupedCourses).map(groupName => (
@@ -146,6 +164,7 @@ function App() {
               </>
             )}
 
+            {/* --- TAB: MY LEARNING --- */}
             {activeTab === 'MyLearning' && (
               <>
                 <h3 className="section-title">My Learning History</h3>
@@ -153,40 +172,41 @@ function App() {
                   <div style={{textAlign:'center', padding:'4rem', color:'#94a3b8'}}>
                     <div style={{fontSize:'3rem', marginBottom:'1rem'}}>📭</div>
                     <p>คุณยังไม่ได้เริ่มเรียนวิชาใดเลย</p>
-                    <button onClick={() => setActiveTab('Class')} className="btn-start-course" style={{maxWidth:'200px', margin:'1rem auto'}}>ไปที่หน้าคอร์สเรียน</button>
+                    <button onClick={() => setActiveTab('Class')} className="btn-start-course" style={{maxWidth:'200px', margin:'1rem auto', padding:'10px', background:'#4f46e5', color:'white', border:'none', borderRadius:'6px', cursor:'pointer'}}>ไปที่หน้าคอร์สเรียน</button>
                   </div>
                 ) : (
                   <div className="groups-grid">
-                     <div className="group-card" style={{gridColumn:'1 / -1'}}>
-                        <div className="group-header"><span>หลักสูตรที่คุณเรียนไปแล้ว</span></div>
-                        {myLearningCourses.map(course => (
-                          <div key={course.id} className="course-list-item" onClick={() => setSelectedCourse(course)}>
-                            <div className="course-thumb" style={{background:'#f3f4f6', color:'#6b7280'}}>{course.icon}</div>
-                            <div className="course-info" style={{flex:1}}>
-                              <div className="course-title">{course.title}</div>
-                              <div className="course-meta">
-                                {course.isCompleted ? <span className="status-badge status-completed">✅ ผ่านแล้ว</span> : <span className="status-badge status-pending">🟡 กำลังเรียน ({Math.floor(course.lastWatched)} วินาที)</span>}
-                              </div>
-                            </div>
-                            <div style={{display:'flex', alignItems:'center'}}><button className="icon-btn">▶</button></div>
-                          </div>
-                        ))}
-                     </div>
+                      <div className="group-card" style={{gridColumn:'1 / -1'}}>
+                         <div className="group-header"><span>หลักสูตรที่คุณเรียนไปแล้ว</span></div>
+                         {myLearningCourses.map(course => (
+                           <div key={course.id} className="course-list-item" onClick={() => setSelectedCourse(course)}>
+                             <div className="course-thumb" style={{background:'#f3f4f6', color:'#6b7280'}}>{course.icon}</div>
+                             <div className="course-info" style={{flex:1}}>
+                               <div className="course-title">{course.title}</div>
+                               <div className="course-meta">
+                                 {course.isCompleted ? <span className="status-badge status-completed">✅ ผ่านแล้ว</span> : <span className="status-badge status-pending">🟡 กำลังเรียน ({Math.floor(course.lastWatched)} วินาที)</span>}
+                               </div>
+                             </div>
+                             <div style={{display:'flex', alignItems:'center'}}><button className="icon-btn">▶</button></div>
+                           </div>
+                         ))}
+                      </div>
                   </div>
                 )}
               </>
             )}
           </>
         ) : (
+          /* --- VIDEO PLAYER PAGE --- */
           <div style={{marginTop:'2rem'}}>
             <button onClick={() => setSelectedCourse(null)} style={{background:'white', border:'1px solid #e5e7eb', padding:'0.5rem 1rem', borderRadius:'8px', cursor:'pointer', marginBottom:'1rem', fontWeight:'600'}}>⬅️ Back</button>
             <div style={{background:'white', padding:'2rem', borderRadius:'16px', boxShadow:'0 4px 6px rgba(0,0,0,0.05)'}}>
                <h2 style={{marginTop:0}}>{selectedCourse.icon} {selectedCourse.title}</h2>
                <TrainingVideoPlayer 
-                  videoUrl={selectedCourse.url}
-                  employeeId={user.employeeId}
-                  employeeName={user.name}
-                  courseId={selectedCourse.id}
+                 videoUrl={selectedCourse.url}
+                 employeeId={user.employeeId}
+                 employeeName={user.name}
+                 courseId={selectedCourse.id}
                />
             </div>
           </div>

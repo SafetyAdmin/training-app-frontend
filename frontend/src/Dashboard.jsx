@@ -2,38 +2,34 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-const ALL_COURSES = [
-  { id: 'SF001', name: 'ความปลอดภัย (Safety)' },
-  { id: 'SF002', name: 'กฎหมาย (Law)' },
-  { id: 'SF003', name: 'ข้อบังคับ (Rules)' }
-];
-
 const Dashboard = ({ onLogout }) => {
-  // State หลัก
+  // --- STATE หลัก ---
   const [employees, setEmployees] = useState([]);
+  const [allCourses, setAllCourses] = useState([]); // เก็บรายชื่อคอร์สจาก DB
   const [isLoading, setIsLoading] = useState(true);
   
-  // State สำหรับจัดการหน้าจอ
-  const [activeTab, setActiveTab] = useState('report'); 
+  // --- STATE UI ---
+  const [activeTab, setActiveTab] = useState('report'); // 'report' | 'manage' | 'courses'
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // State สำหรับฟอร์มเพิ่มพนักงาน
+  const [notification, setNotification] = useState(null); // Toast Message
+  const [confirmModal, setConfirmModal] = useState(null); // Custom Modal
+
+  // --- STATE FORMS ---
   const [newEmpId, setNewEmpId] = useState('');
   const [newEmpName, setNewEmpName] = useState('');
+  const [newCourse, setNewCourse] = useState({
+      id: '', title: '', category: 'ทั่วไป', icon: '📺', url: '', duration: ''
+  });
 
-  // ✅ STATE ใหม่: สำหรับ Modal ยืนยัน (แทน window.confirm)
-  const [confirmModal, setConfirmModal] = useState(null); // { title, message, onConfirm }
-
-  // ✅ STATE ใหม่: สำหรับแจ้งเตือน (Toast)
-  const [notification, setNotification] = useState(null); // { type: 'success'|'error', message }
-
-  // ฟังก์ชันแสดงแจ้งเตือน (Toast)
+  // --- HELPER FUNCTIONS ---
   const showToast = (type, message) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3000); 
+    setTimeout(() => setNotification(null), 3000);
   };
 
-  // 1. ดึงข้อมูล Report
+  // --- API FETCHING ---
+
+  // 1. ดึงข้อมูล Report (พนักงาน + ผลการเรียน)
   const fetchReport = () => {
     fetch('https://training-api-pvak.onrender.com/api/admin/report')
       .then(res => res.json())
@@ -43,21 +39,37 @@ const Dashboard = ({ onLogout }) => {
           setIsLoading(false);
         }
       })
-      .catch(err => {
-        console.error("Error:", err);
-        setIsLoading(false);
-      });
+      .catch(err => console.error("Error fetching report:", err));
   };
 
+  // 2. ดึงรายชื่อคอร์ส (Course List)
+  const fetchCourses = () => {
+      fetch('https://training-api-pvak.onrender.com/api/courses')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) setAllCourses(data.data);
+        })
+        .catch(err => console.error("Error fetching courses:", err));
+  };
+
+  // Initial Load & Interval
   useEffect(() => {
     fetchReport();
+    fetchCourses();
+
+    // Auto Refresh เฉพาะหน้า Report
     if (activeTab === 'report') {
-      const interval = setInterval(fetchReport, 10000);
+      const interval = setInterval(() => {
+          fetchReport();
+          fetchCourses(); // อัปเดตคอร์สด้วยเผื่อมีการเพิ่มลด
+      }, 10000);
       return () => clearInterval(interval);
     }
   }, [activeTab]);
 
-  // 2. ฟังก์ชันเพิ่มพนักงาน
+
+  // --- ACTIONS: EMPLOYEES ---
+
   const handleAddEmployee = async (e) => {
     e.preventDefault();
     if (!newEmpId || !newEmpName) return showToast('error', "กรุณากรอกข้อมูลให้ครบ");
@@ -78,45 +90,76 @@ const Dashboard = ({ onLogout }) => {
       } else {
         showToast('error', "❌ " + data.message);
       }
-    } catch (error) { showToast('error', "Error connecting server"); }
+    } catch (error) { showToast('error', "Server Error"); }
   };
 
-  // 3. เตรียมการลบพนักงานรายคน
   const confirmDeleteEmployee = (id, name) => {
     setConfirmModal({
       title: '⚠️ ยืนยันการลบพนักงาน',
       message: `คุณต้องการลบ "${name}" (${id}) ใช่หรือไม่?\nข้อมูลการเรียนทั้งหมดจะหายไป`,
       action: async () => {
         try {
-          // ✅ แก้ไข: ส่ง ID ไปที่ URL โดยตรง
+          // ✅ ใช้ URL Parameter (แก้ปัญหา Body ใน Delete)
           const res = await fetch(`https://training-api-pvak.onrender.com/api/admin/delete-employee/${id}`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' }
-            // ไม่ต้องมี body แล้ว
           });
-          
-          const data = await res.json(); // อ่าน response เพื่อดู error message ถ้ามี
-
-          if (res.ok && data.success) {
+          if (res.ok) {
             showToast('success', "🗑️ ลบข้อมูลเรียบร้อย");
-            fetchReport(); // ดึงข้อมูลใหม่ทันที
+            fetchReport();
           } else {
-            showToast('error', `❌ ลบไม่ได้: ${data.message || 'ไม่ทราบสาเหตุ'}`);
+            showToast('error', "ลบไม่สำเร็จ");
           }
-        } catch (error) { 
-            console.error(error);
-            showToast('error', "Failed to delete (Server Error)"); 
-        }
+        } catch (error) { showToast('error', "Server Error"); }
         setConfirmModal(null); 
       }
     });
   };
 
-  // 4. เตรียมการรีเซ็ตรายคน
+  // --- ACTIONS: COURSES ---
+
+  const handleAddCourse = async (e) => {
+      e.preventDefault();
+      try {
+        const res = await fetch('https://training-api-pvak.onrender.com/api/admin/add-course', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(newCourse)
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('success', "✅ เพิ่มคอร์สสำเร็จ");
+            setNewCourse({ id: '', title: '', category: 'ทั่วไป', icon: '📺', url: '', duration: '' }); // Reset Form
+            fetchCourses();
+        } else {
+            showToast('error', "❌ " + data.message);
+        }
+      } catch (err) { showToast('error', "Server Error"); }
+  };
+
+  const confirmDeleteCourse = (id, title) => {
+      setConfirmModal({
+          title: '🎬 ยืนยันลบคอร์สเรียน',
+          message: `ต้องการลบวิชา "${title}" (${id}) หรือไม่?`,
+          action: async () => {
+              try {
+                  const res = await fetch(`https://training-api-pvak.onrender.com/api/admin/delete-course/${id}`, { method: 'DELETE' });
+                  if(res.ok) {
+                      showToast('success', "ลบคอร์สเรียบร้อย");
+                      fetchCourses();
+                  }
+              } catch(err) { showToast('error', "Server Error"); }
+              setConfirmModal(null);
+          }
+      });
+  };
+
+  // --- ACTIONS: RESET PROGRESS ---
+
   const confirmReset = (employeeId, employeeName) => {
     setConfirmModal({
       title: '🔄 ยืนยันรีเซ็ตผลการเรียน',
-      message: `คุณต้องการล้างประวัติการเรียนของ "${employeeName}" ทั้งหมดใช่หรือไม่?`,
+      message: `ล้างประวัติการเรียนของ "${employeeName}" ทั้งหมด?`,
       action: async () => {
         try {
           await fetch('https://training-api-pvak.onrender.com/api/admin/reset-progress', {
@@ -132,11 +175,10 @@ const Dashboard = ({ onLogout }) => {
     });
   };
 
-  // 🔥 5. (กู้คืนมาแล้ว) ฟังก์ชันรีเซ็ตทั้งหมด (Reset All)
   const confirmResetAll = () => {
     setConfirmModal({
       title: '🧨 ล้างข้อมูลระบบทั้งหมด?',
-      message: '⚠️ คำเตือน: คุณกำลังจะลบประวัติการเรียนของพนักงาน "ทุกคน" ในระบบ\n\nการกระทำนี้ไม่สามารถกู้คืนได้ ยืนยันที่จะทำรายการหรือไม่?',
+      message: '⚠️ คำเตือน: ประวัติการเรียนของพนักงาน "ทุกคน" จะหายไป\nยืนยันที่จะทำรายการหรือไม่?',
       action: async () => {
         try {
           const res = await fetch('https://training-api-pvak.onrender.com/api/reset-all-progress', {
@@ -146,8 +188,6 @@ const Dashboard = ({ onLogout }) => {
           if (res.ok) {
             showToast('success', "🗑️ ล้างระบบเรียบร้อยแล้ว");
             fetchReport();
-          } else {
-            showToast('error', "Failed to reset");
           }
         } catch (err) { showToast('error', "Server Error"); }
         setConfirmModal(null);
@@ -155,12 +195,11 @@ const Dashboard = ({ onLogout }) => {
     });
   };
 
-  // 🖨️ ฟังก์ชันพิมพ์รายงาน (แถมให้กลับมาด้วยครับ)
   const handlePrint = () => {
-    window.print(); // สั่งพิมพ์แบบปกติ (Browser Print)
+    window.print();
   };
 
-  // Logic ค้นหา
+  // --- FILTER LOGIC ---
   const filteredEmployees = employees.filter(emp => 
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     emp.id.toLowerCase().includes(searchTerm.toLowerCase())
@@ -182,7 +221,7 @@ const Dashboard = ({ onLogout }) => {
           position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
           background: notification.type === 'success' ? '#10b981' : '#ef4444',
           color: 'white', padding: '15px 25px', borderRadius: '8px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)', animation: 'fadeIn 0.3s'
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)', animation: 'fadeIn 0.3s', fontWeight: 'bold'
         }}>
           {notification.message}
         </div>
@@ -218,7 +257,7 @@ const Dashboard = ({ onLogout }) => {
                   borderRadius: '6px', cursor: 'pointer', color: 'white', fontWeight: 'bold'
                 }}
               >
-                ยืนยันทำรายการ
+                ยืนยัน
               </button>
             </div>
           </div>
@@ -237,7 +276,7 @@ const Dashboard = ({ onLogout }) => {
                     color: activeTab === 'report' ? 'white' : '#6b7280'
                 }}
             >
-                📋 สรุปผลการเรียน (Report)
+                📋 สรุปผล (Report)
             </button>
             <button 
                 onClick={() => setActiveTab('manage')}
@@ -247,11 +286,21 @@ const Dashboard = ({ onLogout }) => {
                     color: activeTab === 'manage' ? 'white' : '#6b7280'
                 }}
             >
-                👥 จัดการรายชื่อ (Add/Remove)
+                👥 พนักงาน (Users)
+            </button>
+            <button 
+                onClick={() => setActiveTab('courses')}
+                style={{
+                    padding:'10px 20px', borderRadius:'8px', border:'none', cursor:'pointer', fontWeight:'bold',
+                    background: activeTab === 'courses' ? '#4f46e5' : 'transparent',
+                    color: activeTab === 'courses' ? 'white' : '#6b7280'
+                }}
+            >
+                🎬 คอร์สเรียน (Courses)
             </button>
         </div>
 
-        {/* --- เนื้อหา TAB 1: REPORT --- */}
+        {/* --- TAB 1: REPORT --- */}
         {activeTab === 'report' && (
           <>
              <div className="toolbar">
@@ -263,12 +312,7 @@ const Dashboard = ({ onLogout }) => {
                     />
                 </div>
                 
-                {/* 🔥 คืนชีพปุ่ม Reset All ตรงนี้ครับ */}
                 <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
-                    <div style={{color:'#6b7280', fontSize:'14px', marginRight:'10px', display: 'none'}}>
-                        (ทั้งหมด: {employees.length})
-                    </div>
-                    
                     <button 
                       onClick={handlePrint}
                       style={{
@@ -298,18 +342,25 @@ const Dashboard = ({ onLogout }) => {
                         <tr>
                         <th style={{width:'10%'}}>รหัส</th>
                         <th style={{width:'20%', textAlign:'left'}}>พนักงาน</th>
-                        {ALL_COURSES.map(c => <th key={c.id} style={{textAlign:'center'}}>{c.name}</th>)}
-                        <th style={{textAlign:'center'}}>รีเซ็ตผล</th>
+                        {/* 🔥 Dynamic Table Header from DB */}
+                        {allCourses.map(c => (
+                            <th key={c.id} style={{textAlign:'center', fontSize:'0.85rem', maxWidth:'150px'}}>
+                                {c.title.length > 20 ? c.title.substring(0, 20)+'...' : c.title}
+                            </th>
+                        ))}
+                        <th style={{textAlign:'center'}}>รีเซ็ต</th>
                         </tr>
                     </thead>
                     <tbody>
                         {isLoading ? (
-                            <tr><td colSpan={6} style={{padding:'2rem', textAlign:'center'}}>⏳ กำลังโหลด...</td></tr>
+                            <tr><td colSpan={allCourses.length + 3} style={{padding:'2rem', textAlign:'center'}}>⏳ กำลังโหลด...</td></tr>
                         ) : filteredEmployees.map(emp => (
                         <tr key={emp.id}>
                             <td style={{textAlign:'center', fontWeight:'bold', color:'#64748b'}}>{emp.id}</td>
-                            <td>{emp.name} <br/><span style={{fontSize:'0.8em', color:'#aaa'}}>ล่าสุด: {emp.lastSeen}</span></td>
-                            {ALL_COURSES.map(c => {
+                            <td>{emp.name} <br/><span style={{fontSize:'0.8em', color:'#aaa'}}>เข้าล่าสุด: {emp.lastSeen}</span></td>
+                            
+                            {/* 🔥 Dynamic Progress Data */}
+                            {allCourses.map(c => {
                                 const p = emp.progress?.[c.id];
                                 return (
                                     <td key={c.id} style={{textAlign:'center'}}>
@@ -319,6 +370,7 @@ const Dashboard = ({ onLogout }) => {
                                     </td>
                                 )
                             })}
+                            
                             <td style={{textAlign:'center'}}>
                                 <button className="btn-reset" onClick={() => confirmReset(emp.id, emp.name)}>🔄</button>
                             </td>
@@ -331,7 +383,7 @@ const Dashboard = ({ onLogout }) => {
           </>
         )}
 
-        {/* --- เนื้อหา TAB 2: MANAGE EMPLOYEES --- */}
+        {/* --- TAB 2: MANAGE EMPLOYEES --- */}
         {activeTab === 'manage' && (
           <div style={{ display:'grid', gridTemplateColumns: '1fr 2fr', gap:'20px' }}>
               
@@ -341,19 +393,15 @@ const Dashboard = ({ onLogout }) => {
                       <div style={{marginBottom:'15px'}}>
                           <label style={{display:'block', marginBottom:'5px', fontWeight:'bold'}}>รหัสพนักงาน</label>
                           <input 
-                            type="text" className="input-field" 
-                            placeholder="เช่น EMP999" 
-                            value={newEmpId} onChange={e => setNewEmpId(e.target.value)}
-                            required
+                            type="text" className="input-field" placeholder="เช่น EMP999" 
+                            value={newEmpId} onChange={e => setNewEmpId(e.target.value)} required
                           />
                       </div>
                       <div style={{marginBottom:'15px'}}>
                           <label style={{display:'block', marginBottom:'5px', fontWeight:'bold'}}>ชื่อ-นามสกุล</label>
                           <input 
-                            type="text" className="input-field" 
-                            placeholder="เช่น นายรักงาน ขยันยิ่ง" 
-                            value={newEmpName} onChange={e => setNewEmpName(e.target.value)}
-                            required
+                            type="text" className="input-field" placeholder="เช่น นายรักงาน ขยันยิ่ง" 
+                            value={newEmpName} onChange={e => setNewEmpName(e.target.value)} required
                           />
                       </div>
                       <button type="submit" className="btn btn-primary" style={{width:'100%'}}>บันทึกข้อมูล</button>
@@ -361,7 +409,7 @@ const Dashboard = ({ onLogout }) => {
               </div>
 
               <div className="card" style={{ background:'white', padding:'20px', borderRadius:'12px' }}>
-                  <h3 style={{marginTop:0}}>🗑️ รายชื่อพนักงานในระบบ ({filteredEmployees.length})</h3>
+                  <h3 style={{marginTop:0}}>🗑️ รายชื่อพนักงาน ({filteredEmployees.length})</h3>
                   <input 
                     type="text" className="input-field" placeholder="ค้นหาเพื่อลบ..." 
                     value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
@@ -400,6 +448,66 @@ const Dashboard = ({ onLogout }) => {
                   </div>
               </div>
           </div>
+        )}
+
+        {/* --- TAB 3: MANAGE COURSES --- */}
+        {activeTab === 'courses' && (
+            <div style={{display:'grid', gridTemplateColumns:'1fr 2fr', gap:'20px'}}>
+                {/* Form เพิ่มคอร์ส */}
+                <div className="card" style={{ background:'white', padding:'20px', borderRadius:'12px', height:'fit-content' }}>
+                    <h3 style={{marginTop:0}}>➕ เพิ่มคอร์สวิดีโอ</h3>
+                    <form onSubmit={handleAddCourse}>
+                        <div style={{marginBottom:'10px'}}>
+                             <label>รหัสวิชา</label>
+                             <input className="input-field" placeholder="เช่น SF001" value={newCourse.id} onChange={e=>setNewCourse({...newCourse, id: e.target.value})} required />
+                        </div>
+                        <div style={{marginBottom:'10px'}}>
+                             <label>ชื่อวิชา</label>
+                             <input className="input-field" placeholder="ชื่อวิชา" value={newCourse.title} onChange={e=>setNewCourse({...newCourse, title: e.target.value})} required />
+                        </div>
+                        <div style={{marginBottom:'10px'}}>
+                             <label>หมวดหมู่</label>
+                             <input className="input-field" placeholder="เช่น ความปลอดภัย" value={newCourse.category} onChange={e=>setNewCourse({...newCourse, category: e.target.value})} required />
+                        </div>
+                        <div style={{marginBottom:'10px'}}>
+                             <label>YouTube URL</label>
+                             <input className="input-field" placeholder="https://youtu.be/..." value={newCourse.url} onChange={e=>setNewCourse({...newCourse, url: e.target.value})} required />
+                        </div>
+                        <div style={{marginBottom:'10px'}}>
+                             <label>ความยาว (Text)</label>
+                             <input className="input-field" placeholder="เช่น 10:00 นาที" value={newCourse.duration} onChange={e=>setNewCourse({...newCourse, duration: e.target.value})} />
+                        </div>
+                        <button className="btn btn-primary" style={{width:'100%'}}>บันทึกคอร์ส</button>
+                    </form>
+                </div>
+
+                {/* List คอร์ส */}
+                <div className="card" style={{ background:'white', padding:'20px', borderRadius:'12px' }}>
+                    <h3 style={{marginTop:0}}>🎬 รายการคอร์สปัจจุบัน ({allCourses.length})</h3>
+                    <div style={{maxHeight:'600px', overflowY:'auto'}}>
+                        {allCourses.length === 0 && <p style={{color:'#aaa', textAlign:'center'}}>ยังไม่มีข้อมูลคอร์ส</p>}
+                        {allCourses.map(c => (
+                            <div key={c.id} style={{borderBottom:'1px solid #eee', padding:'15px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                                <div>
+                                    <div style={{fontWeight:'bold', fontSize:'1.1rem', color:'#374151'}}>{c.id}: {c.title}</div>
+                                    <div style={{fontSize:'0.9rem', color:'#6b7280', marginTop:'5px'}}>
+                                        📂 {c.category} &nbsp;|&nbsp; 🕒 {c.duration} &nbsp;|&nbsp; 🔗 <a href={c.url} target="_blank" rel="noreferrer">เปิดลิ้งก์</a>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => confirmDeleteCourse(c.id, c.title)} 
+                                    style={{
+                                        background:'#fee2e2', color:'#b91c1c', border:'none', 
+                                        borderRadius:'6px', padding:'8px 12px', cursor:'pointer', fontWeight:'bold'
+                                    }}
+                                >
+                                    ลบ
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
         )}
 
       </div>

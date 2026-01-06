@@ -1,3 +1,4 @@
+// --- ไฟล์ server.js (ฉบับสมบูรณ์) ---
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
@@ -5,20 +6,19 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors({
-  origin: '*', // อนุญาตให้ใครก็ได้เข้ามา... (แก้ปัญหา CORS 100%)
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(bodyParser.json());
 
-// --- 1. เชื่อมต่อ Database ---
+// 1. เชื่อมต่อ Database
 const MONGO_URI = 'mongodb+srv://haekwang:Hae347795@cluster0.rk7rvot.mongodb.net/?appName=Cluster0';
-
 mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Error:', err));
 
-// --- 2. สร้าง Model (Schema) ---
+// 2. สร้าง Model
 const progressSchema = new mongoose.Schema({
   employeeId: String,
   employeeName: String,
@@ -37,71 +37,104 @@ const Employee = mongoose.model('Employee', employeeSchema);
 
 // --- 3. API ต่างๆ ---
 
-// 3.1 บันทึกเวลาเรียน (แก้ให้ผ่านง่ายขึ้น)
-app.post('/api/save-progress', async (req, res) => {
-  const { employeeId, employeeName, courseId, currentTime, totalDuration } = req.body;
-  try {
-    let progress = await Progress.findOne({ employeeId, courseId });
-    if (!progress) {
-      progress = new Progress({ 
-        employeeId, 
-        employeeName, 
-        courseId, 
-        lastWatchedTime: currentTime, 
-        isCompleted: false 
-      });
-    } else {
-      progress.employeeName = employeeName;
-      progress.lastWatchedTime = currentTime;
-    }
-
-    // ✅ ปรับแก้: ถ้าดูเกิน 90% ให้ถือว่าผ่าน (เผื่อเน็ตกระตุกเวลาหาย)
-    if (totalDuration > 0 && currentTime >= (totalDuration * 0.90)) {
-       progress.isCompleted = true;
-    }
-    // ✅ เพิ่ม: ถ้าจบวิดีโอ (เวลาดู กับ เวลารวม ต่างกันไม่เกิน 5 วิ) ให้ผ่านเลย
-    if (totalDuration > 0 && Math.abs(currentTime - totalDuration) < 5) {
-       progress.isCompleted = true;
-    }
-
-    progress.lastUpdated = new Date();
-    await progress.save();
-    res.json({ success: true });
-  } catch (error) { 
-    console.error(error);
-    res.status(500).json({ success: false }); 
-  }
-});
-
-// 3.2 ดึงเวลาเรียนเดิม
-app.get('/api/get-progress', async (req, res) => {
-    try {
-        const { employeeId, courseId } = req.query;
-        // ดึงอันที่อัปเดตล่าสุด
-        const progress = await Progress.findOne({ employeeId, courseId }).sort({ lastUpdated: -1 });
-        res.json({ currentTime: progress ? progress.lastWatchedTime : 0 });
-    } catch (err) { 
-        console.error(err);
-        res.status(500).json({ error: 'Error' }); 
-    }
-});
-
-// 3.3 ล็อกอินพนักงาน
+// Login
 app.post('/api/login', async (req, res) => {
   const { employeeId } = req.body;
   try {
     const emp = await Employee.findOne({ employeeId });
     if (emp) res.json({ success: true, name: emp.name, employeeId: emp.employeeId });
     else res.json({ success: false, message: 'ไม่พบรหัสพนักงาน' });
-  } catch (err) { 
-    console.error(err);
-    res.status(500).json({ success: false }); 
-  }
+  } catch (err) { res.status(500).json({ success: false }); }
 });
 
-// 3.4 ลงทะเบียนรายชื่อพนักงาน (Setup) - รายชื่อครบทุกคน
+// บันทึกเวลาเรียน
+app.post('/api/save-progress', async (req, res) => {
+  const { employeeId, employeeName, courseId, currentTime, totalDuration } = req.body;
+  try {
+    let progress = await Progress.findOne({ employeeId, courseId });
+    if (!progress) {
+      progress = new Progress({ employeeId, employeeName, courseId, lastWatchedTime: currentTime, isCompleted: false });
+    } else {
+      progress.employeeName = employeeName;
+      progress.lastWatchedTime = currentTime;
+    }
+    // Logic ผ่านเกณฑ์ (90%)
+    if (totalDuration > 0 && currentTime >= (totalDuration * 0.90)) {
+       progress.isCompleted = true;
+    }
+    // Logic จบวิดีโอ (เหลือไม่เกิน 5 วิ)
+    if (totalDuration > 0 && Math.abs(currentTime - totalDuration) < 5) {
+       progress.isCompleted = true;
+    }
+    progress.lastUpdated = new Date();
+    await progress.save();
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ success: false }); }
+});
+
+// ดึงเวลาเรียนเดิม (Resume)
+app.get('/api/get-progress', async (req, res) => {
+    try {
+        const { employeeId, courseId } = req.query;
+        const progress = await Progress.findOne({ employeeId, courseId }).sort({ lastUpdated: -1 });
+        // ส่งกลับ 0 ถ้าไม่มีประวัติ
+        res.json({ currentTime: progress ? progress.lastWatchedTime : 0 });
+    } catch (err) { res.status(500).json({ error: 'Error' }); }
+});
+
+// 📌 API ใหม่: My Learning (ดึงประวัติรายบุคคล)
+app.get('/api/my-learning/:employeeId', async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const history = await Progress.find({ employeeId });
+        res.json({ success: true, data: history });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// API Admin Report
+app.get('/api/admin/report', async (req, res) => {
+  try {
+    const employees = await Employee.find();
+    const progressList = await Progress.find();
+    const report = employees.map(emp => {
+      const myProgress = progressList.filter(p => p.employeeId === emp.employeeId);
+      const progressMap = {};
+      myProgress.forEach(p => {
+        progressMap[p.courseId] = { isCompleted: p.isCompleted, lastWatched: p.lastWatchedTime };
+      });
+      let lastSeen = '-';
+      if (myProgress.length > 0) {
+        const maxDate = new Date(Math.max(...myProgress.map(p => new Date(p.lastUpdated))));
+        lastSeen = maxDate.toLocaleString('th-TH');
+      }
+      return { id: emp.employeeId, name: emp.name, progress: progressMap, lastSeen: lastSeen };
+    });
+    res.json({ success: true, data: report });
+  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+// Reset รายบุคคล
+app.post('/api/admin/reset-progress', async (req, res) => {
+  const { employeeId } = req.body;
+  try {
+    await Progress.deleteMany({ employeeId });
+    res.json({ success: true, message: 'รีเซ็ตข้อมูลเรียบร้อย' });
+  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+// Reset ทั้งหมด
+app.delete('/api/reset-all-progress', async (req, res) => {
+    try {
+        await Progress.deleteMany({}); 
+        res.json({ success: true, message: "Reset all progress successful" });
+    } catch (error) { res.status(500).json({ success: false, error: "Failed to reset progress" }); }
+});
+
+// Setup รายชื่อพนักงาน
 app.get('/api/setup-employees', async (req, res) => {
-    const employees = [
+const employees = [
         { "employeeId": "AM0511001", "name": "นางสาวพวงเพชร  พยนต์" },
         { "employeeId": "AM0908001", "name": "นางประกอบ  ลีพิลา" },
         { "employeeId": "AM1005001", "name": "นายสมพร  แสนขุนทด" },
@@ -589,101 +622,10 @@ app.get('/api/setup-employees', async (req, res) => {
         { "employeeId": "ST2506002", "name": "นายชโนทัย  สินจันทร์" },
         { "employeeId": "ST2507001", "name": "นายประยูร  แก้วมาลา" }
     ];
-
-    try {
-        for (const data of employees) {
-            // Upsert: .อัปเดตถ้ามี สร้างใหม่ถ้าไม่มี
-            await Employee.findOneAndUpdate({ employeeId: data.employeeId }, data, { upsert: true });
-        }
-        res.send(`✅ อัปเดตรายชื่อพนักงานจำนวน ${employees.length} คน เรียบร้อยแล้ว!`);
-    } catch (err) { 
-        res.send('❌ Error: ' + err.message); 
-    }
+    res.send('Setup OK');
 });
 
-// 3.5 API ดึงรายงานแบบ Matrix (ดูได้ทุกวิชา)
-app.get('/api/admin/report', async (req, res) => {
-  try {
-    const employees = await Employee.find();
-    const progressList = await Progress.find(); // ดึงประวัติทั้งหมดออกมา
-
-    const report = employees.map(emp => {
-      // 1. หาประวัติทั้งหมดของพนักงานคนนี้
-      const myProgress = progressList.filter(p => p.employeeId === emp.employeeId);
-      
-      // 2. แปลงเป็น Object เพื่อง่ายต่อการเช็ค { 'SF001': { status: true }, 'SF002': ... }
-      const progressMap = {};
-      myProgress.forEach(p => {
-        progressMap[p.courseId] = {
-          isCompleted: p.isCompleted,
-          lastWatched: p.lastWatchedTime
-        };
-      });
-
-      // 3. หาเวลาล่าสุดที่เข้ามาใช้งาน (ไม่ว่าจะวิชาไหน)
-      let lastSeen = '-';
-      if (myProgress.length > 0) {
-        // หาค่าวันที่ที่มากที่สุด (ล่าสุด)
-        const maxDate = new Date(Math.max(...myProgress.map(p => new Date(p.lastUpdated))));
-        lastSeen = maxDate.toLocaleString('th-TH');
-      }
-
-      return {
-        id: emp.employeeId,
-        name: emp.name,
-        progress: progressMap, // ส่งรายการวิชาทั้งหมดไป
-        lastSeen: lastSeen
-      };
-    });
-
-    res.json({ success: true, data: report });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// 3.6 API รีเซ็ตการเรียน (สำหรับ Admin กดรีเซ็ตให้พนักงาน)
-app.post('/api/admin/reset-progress', async (req, res) => {
-  const { employeeId } = req.body;
-  try {
-    // ลบข้อมูล Progress ของพนักงานคนนั้นทิ้งทั้งหมด
-    await Progress.deleteMany({ employeeId });
-    console.log(`🗑️ Reset progress for: ${employeeId}`);
-    res.json({ success: true, message: 'รีเซ็ตข้อมูลเรียบร้อย' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// API สำหรับรีเซ็ตข้อมูลการเรียนทั้งหมด
-app.delete('/api/reset-all-progress', async (req, res) => {
-    try {
-        // ✅ แก้ไข: ใช้คำสั่ง deleteMany ของ Mongoose จริงๆ
-        // Progress คือชื่อ Model ที่คุณประกาศไว้ด้านบน (const Progress = mongoose.model(...))
-        await Progress.deleteMany({}); 
-
-        console.log("🗑️ ล้างข้อมูล Progress ทั้งหมดเรียบร้อยแล้ว");
-        res.json({ success: true, message: "Reset all progress successful" });
-    } catch (error) {
-        console.error("❌ Error resetting progress:", error);
-        res.status(500).json({ success: false, error: "Failed to reset progress" });
-    }
-});
-
-// 3.7 API ดึงประวัติการเรียนของพนักงานคนเดียว (สำหรับหน้า My Learning)
-app.get('/api/my-learning/:employeeId', async (req, res) => {
-    try {
-        const { employeeId } = req.params;
-        // ค้นหาประวัติการเรียนทั้งหมดของรหัสพนักงานนี้
-        const history = await Progress.find({ employeeId });
-        res.json({ success: true, data: history });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-// --- 4. Start Server ---
+// Start Server
 const PORT = process.env.PORT || 3001; 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

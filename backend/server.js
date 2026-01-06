@@ -132,7 +132,7 @@ app.delete('/api/reset-all-progress', async (req, res) => {
     } catch (error) { res.status(500).json({ success: false, error: "Failed to reset progress" }); }
 });
 
-// Setup รายชื่อพนักงาน
+// Setup รายชื่อพนักงาน.
 app.get('/api/setup-employees', async (req, res) => {
 const employees = [
         { "employeeId": "AM0511001", "name": "นางสาวพวงเพชร  พยนต์" },

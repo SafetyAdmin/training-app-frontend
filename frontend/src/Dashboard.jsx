@@ -153,20 +153,12 @@ const Dashboard = ({ onLogout }) => {
     });
   };
 
-  // 🔥 ฟังก์ชันพิมพ์แบบใหม่ (New Window) เพื่อแก้ปัญหา Sandbox
+  // 🔥 ฟังก์ชันพิมพ์ (แก้ Sandbox)
   const handlePrint = () => {
-    // 1. เปิดหน้าต่างใหม่
     const printWindow = window.open('', '', 'height=600,width=900');
-    
-    if (!printWindow) {
-        alert("Pop-up ถูกบล็อก! กรุณากดอนุญาต Pop-up หรือเปิดเว็บในแท็บใหม่");
-        return;
-    }
+    if (!printWindow) return alert("Pop-up ถูกบล็อก!");
 
-    // 2. ดึง HTML ของตาราง
     const tableContent = document.querySelector('.table-wrapper')?.outerHTML || "<h1>ไม่พบข้อมูลตาราง</h1>";
-
-    // 3. เขียนข้อมูลลงไปในหน้าต่างใหม่
     printWindow.document.write(`
       <html>
         <head>
@@ -174,31 +166,25 @@ const Dashboard = ({ onLogout }) => {
           <style>
              body { font-family: 'Sarabun', sans-serif; padding: 20px; }
              h2 { text-align: center; margin-bottom: 20px; }
-             /* จัด CSS สำหรับพิมพ์โดยเฉพาะ */
+             /* Force Styling for Print */
              .table-wrapper { box-shadow: none !important; border: 1px solid #000 !important; max-height: none !important; overflow: visible !important; }
              table { width: 100%; border-collapse: collapse; }
              th, td { border: 1px solid #000 !important; padding: 5px; font-size: 10px; color: black !important; text-align: center; }
              th { background-color: #eee !important; -webkit-print-color-adjust: exact; }
              .sticky-col { position: static !important; box-shadow: none !important; border-right: 1px solid #000 !important; text-align: left !important; }
              .badge-dot { border: 1px solid #000; display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
-             .badge-pass { background-color: black !important; } /* สีดำเวลาพิมพ์ */
-             .btn-reset { display: none; } /* ซ่อนปุ่ม */
+             .badge-pass { background-color: black !important; }
+             .btn-reset { display: none; }
           </style>
         </head>
         <body>
-          <h2>สรุปผลการฝึกอบรม (Training Report)</h2>
-          <p>วันที่พิมพ์: ${new Date().toLocaleString('th-TH')}</p>
+          <h2>สรุปผลการฝึกอบรม</h2>
+          <p>วันที่: ${new Date().toLocaleString('th-TH')}</p>
           ${tableContent}
-          <script>
-            setTimeout(() => {
-                window.print();
-                // window.close(); 
-            }, 500);
-          </script>
+          <script>setTimeout(() => { window.print(); }, 500);</script>
         </body>
       </html>
     `);
-    
     printWindow.document.close();
   };
 
@@ -249,16 +235,12 @@ const Dashboard = ({ onLogout }) => {
 
       <div className="main-container">
         {/* Tab Navigation */}
-        <div style={{ display:'flex', gap:'10px', marginBottom:'20px', borderBottom:'1px solid #e5e7eb', paddingBottom:'10px' }}>
+        <div className="tab-menu">
             {['report', 'manage', 'courses'].map(tab => (
                 <button 
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    style={{
-                        padding:'10px 20px', borderRadius:'8px', border:'none', cursor:'pointer', fontWeight:'bold',
-                        background: activeTab === tab ? '#4f46e5' : 'transparent',
-                        color: activeTab === tab ? 'white' : '#6b7280'
-                    }}
+                    className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
                 >
                     {tab === 'report' ? '📋 สรุปผล' : tab === 'manage' ? '👥 จัดการคน' : '🎬 จัดการคอร์ส'}
                 </button>
@@ -273,7 +255,7 @@ const Dashboard = ({ onLogout }) => {
                     <span className="search-icon">🔍</span>
                     <input type="text" className="search-input" placeholder="ค้นหา..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
-                <div style={{display:'flex', gap:'10px'}}>
+                <div className="toolbar-actions">
                     <button onClick={handlePrint} className="btn" style={{background:'#3b82f6', color:'white'}}>🖨️ Print</button>
                     <button onClick={confirmResetAll} className="btn" style={{background:'#ef4444', color:'white'}}>🗑️ Reset All</button>
                 </div>
@@ -334,7 +316,7 @@ const Dashboard = ({ onLogout }) => {
 
         {/* --- TAB 2: MANAGE EMPLOYEES --- */}
         {activeTab === 'manage' && (
-          <div style={{ display:'grid', gridTemplateColumns: '1fr 2fr', gap:'20px' }}>
+          <div className="manage-grid">
               <div className="card" style={{ height:'fit-content' }}>
                   <h3 style={{marginTop:0}}>➕ เพิ่มพนักงาน</h3>
                   <form onSubmit={handleAddEmployee}>
@@ -373,7 +355,7 @@ const Dashboard = ({ onLogout }) => {
 
         {/* --- TAB 3: MANAGE COURSES --- */}
         {activeTab === 'courses' && (
-            <div style={{display:'grid', gridTemplateColumns:'1fr 2fr', gap:'20px'}}>
+            <div className="manage-grid">
                 <div className="card" style={{ height:'fit-content' }}>
                     <h3 style={{marginTop:0}}>➕ เพิ่มคอร์ส</h3>
                     <form onSubmit={handleAddCourse}>

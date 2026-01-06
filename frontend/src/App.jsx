@@ -8,10 +8,8 @@ import Login from './Login';
 function App() {
   const [user, setUser] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  
-  // ✅ STATE ใหม่: ควบคุมแท็บ และ เก็บข้อมูลประวัติการเรียน
-  const [activeTab, setActiveTab] = useState('Class'); // 'Class' หรือ 'MyLearning'
-  const [myProgress, setMyProgress] = useState([]);    // เก็บข้อมูลที่ดึงมาจาก API
+  const [activeTab, setActiveTab] = useState('Class'); 
+  const [myProgress, setMyProgress] = useState([]);    
   const [activeCategory, setActiveCategory] = useState('All');
 
   // ข้อมูลคอร์ส (ชุดเดิม)
@@ -37,10 +35,11 @@ function App() {
 
   const categories = useMemo(() => [...new Set(courses.map(c => c.category))], [courses]);
 
-  // ✅ EFFECT: ดึงข้อมูล My Learning เมื่อกดแท็บ หรือเมื่อ User เปลี่ยน
+  // ✅ EFFECT: ดึงข้อมูลจาก Server จริง (Render)
   useEffect(() => {
     if (user && activeTab === 'MyLearning') {
-      fetch(`https://training-api-pvak.onrender.com/api/my-learning/${user.employeeId}`) // แก้ URL ให้ตรงกับ Server
+      // ใช้ URL ของ Render ตามที่คุณต้องการ
+      fetch(`https://training-api-pvak.onrender.com/api/my-learning/${user.employeeId}`) 
         .then(res => res.json())
         .then(data => {
           if (data.success) setMyProgress(data.data);
@@ -49,7 +48,6 @@ function App() {
     }
   }, [user, activeTab]);
 
-  // จัดกลุ่มคอร์ส (สำหรับหน้า Class ปกติ)
   const groupedCourses = useMemo(() => {
     const groups = {};
     courses.forEach(course => {
@@ -61,48 +59,30 @@ function App() {
     return groups;
   }, [courses, activeCategory]);
 
-  // ✅ LOGIC: กรองคอร์สสำหรับหน้า My Learning
   const myLearningCourses = useMemo(() => {
     if (activeTab !== 'MyLearning') return [];
-    // เอาคอร์สทั้งหมด มาเช็คว่า id นี้มีอยู่ในประวัติการเรียนไหม
     return courses.filter(course => {
       const record = myProgress.find(p => p.courseId === course.id);
-      return record !== undefined; // ถ้ามีประวัติ แสดงว่าเคยเรียน
+      return record !== undefined; 
     }).map(course => {
-       // แปะสถานะเพิ่มเข้าไปใน object course เพื่อเอาไปโชว์
        const record = myProgress.find(p => p.courseId === course.id);
        return { ...course, isCompleted: record.isCompleted, lastWatched: record.lastWatchedTime };
     });
   }, [courses, myProgress, activeTab]);
-
 
   if (!user) return <Login onLogin={(u) => setUser(u)} />;
   if (user.role === 'admin') return <Dashboard onLogout={() => setUser(null)} />;
 
   return (
     <div>
-      {/* --- Navbar --- */}
       <nav className="navbar">
         <div className="nav-left">
-          <div className="brand-logo">Learning Center</div>
-          
-          {/* ✅ แก้ไข: เมนูสลับแท็บได้จริง */}
+          <div className="brand-logo">SEC Learning Center</div>
           <div className="nav-menu">
-            <span 
-              onClick={() => setActiveTab('Class')}
-              style={activeTab === 'Class' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}
-            >
-              Class
-            </span>
-            <span 
-              onClick={() => setActiveTab('MyLearning')}
-              style={activeTab === 'MyLearning' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}
-            >
-              My Learning
-            </span>
+            <span onClick={() => setActiveTab('Class')} style={activeTab === 'Class' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}>Class</span>
+            <span onClick={() => setActiveTab('MyLearning')} style={activeTab === 'MyLearning' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}>My Learning</span>
           </div>
         </div>
-
         <div className="nav-right">
           <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2', marginRight: '8px'}}>
             <span style={{fontWeight: '600', color: '#374151', fontSize: '0.95rem'}}>{user.name}</span>
@@ -115,29 +95,19 @@ function App() {
       <div className="dashboard-container">
         {!selectedCourse ? (
           <>
-            {/* 📌 กรณีอยู่หน้า Class (หน้าปกติ) */}
             {activeTab === 'Class' && (
               <>
-                {/* Filter Banner */}
                 <div className="category-filter-scroll">
-                  <div 
-                    className={`filter-card ${activeCategory === 'All' ? 'active' : ''}`}
-                    onClick={() => setActiveCategory('All')}
-                    style={{background: '#374151'}}
-                  >
-                    <h4>Show All Resources</h4>
-                    <span>{courses.length} courses</span>
+                  <div className={`filter-card ${activeCategory === 'All' ? 'active' : ''}`} onClick={() => setActiveCategory('All')} style={{background: '#374151'}}>
+                    <h4>Show All Resources</h4><span>{courses.length} courses</span>
                   </div>
                   {categories.map(cat => (
                     <div key={cat} className={`filter-card ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
-                      <h4>{cat}</h4>
-                      <span>{courses.filter(c => c.category === cat).length} courses</span>
+                      <h4>{cat}</h4><span>{courses.filter(c => c.category === cat).length} courses</span>
                     </div>
                   ))}
                 </div>
-
                 <h3 className="section-title">Category Group</h3>
-
                 <div className="groups-grid">
                   {Object.keys(groupedCourses).map(groupName => (
                     <div key={groupName} className="group-card">
@@ -147,14 +117,10 @@ function App() {
                           <div className="course-thumb" style={{
                              background: groupName.includes('Safety') ? '#fee2e2' : groupName.includes('5S') ? '#dcfce7' : '#e0e7ff',
                              color: groupName.includes('Safety') ? '#ef4444' : groupName.includes('5S') ? '#166534' : '#4f46e5'
-                          }}>
-                            {course.icon}
-                          </div>
+                          }}>{course.icon}</div>
                           <div className="course-info">
                             <div className="course-title">{course.title}</div>
-                            <div className="course-meta">
-                              <span>Online</span><span>|</span><span>🕒 {course.duration}</span>
-                            </div>
+                            <div className="course-meta"><span>Online</span><span>|</span><span>🕒 {course.duration}</span></div>
                           </div>
                         </div>
                       ))}
@@ -164,11 +130,9 @@ function App() {
               </>
             )}
 
-            {/* 📌 กรณีอยู่หน้า My Learning (หน้าใหม่) */}
             {activeTab === 'MyLearning' && (
               <>
                 <h3 className="section-title">My Learning History</h3>
-                
                 {myLearningCourses.length === 0 ? (
                   <div style={{textAlign:'center', padding:'4rem', color:'#94a3b8'}}>
                     <div style={{fontSize:'3rem', marginBottom:'1rem'}}>📭</div>
@@ -181,22 +145,14 @@ function App() {
                         <div className="group-header"><span>หลักสูตรที่คุณเรียนไปแล้ว</span></div>
                         {myLearningCourses.map(course => (
                           <div key={course.id} className="course-list-item" onClick={() => setSelectedCourse(course)}>
-                            <div className="course-thumb" style={{background:'#f3f4f6', color:'#6b7280'}}>
-                              {course.icon}
-                            </div>
+                            <div className="course-thumb" style={{background:'#f3f4f6', color:'#6b7280'}}>{course.icon}</div>
                             <div className="course-info" style={{flex:1}}>
                               <div className="course-title">{course.title}</div>
                               <div className="course-meta">
-                                {course.isCompleted ? (
-                                  <span className="status-badge status-completed">✅ ผ่านแล้ว</span>
-                                ) : (
-                                  <span className="status-badge status-pending">🟡 กำลังเรียน ({Math.floor(course.lastWatched)} วินาที)</span>
-                                )}
+                                {course.isCompleted ? <span className="status-badge status-completed">✅ ผ่านแล้ว</span> : <span className="status-badge status-pending">🟡 กำลังเรียน ({Math.floor(course.lastWatched)} วินาที)</span>}
                               </div>
                             </div>
-                            <div style={{display:'flex', alignItems:'center'}}>
-                               <button className="icon-btn">▶</button>
-                            </div>
+                            <div style={{display:'flex', alignItems:'center'}}><button className="icon-btn">▶</button></div>
                           </div>
                         ))}
                      </div>
@@ -206,19 +162,13 @@ function App() {
             )}
           </>
         ) : (
-          // --- หน้าเล่นวิดีโอ ---
           <div style={{marginTop:'2rem'}}>
-            <button 
-              onClick={() => setSelectedCourse(null)}
-              style={{background:'white', border:'1px solid #e5e7eb', padding:'0.5rem 1rem', borderRadius:'8px', cursor:'pointer', marginBottom:'1rem', fontWeight:'600'}}
-            >
-              ⬅️ Back
-            </button>
+            <button onClick={() => setSelectedCourse(null)} style={{background:'white', border:'1px solid #e5e7eb', padding:'0.5rem 1rem', borderRadius:'8px', cursor:'pointer', marginBottom:'1rem', fontWeight:'600'}}>⬅️ Back</button>
             <div style={{background:'white', padding:'2rem', borderRadius:'16px', boxShadow:'0 4px 6px rgba(0,0,0,0.05)'}}>
                <h2 style={{marginTop:0}}>{selectedCourse.icon} {selectedCourse.title}</h2>
                <TrainingVideoPlayer 
                   videoUrl={selectedCourse.url}
-                  employeeId={user.employeeId} /* ⚠️ แก้ไขให้ใช้ employeeId */
+                  employeeId={user.employeeId} 
                   employeeName={user.name}
                   courseId={selectedCourse.id}
                />
@@ -231,7 +181,3 @@ function App() {
 }
 
 export default App;
-
-  
-
- 

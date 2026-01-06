@@ -1,5 +1,5 @@
 // src/Dashboard.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
 const ALL_COURSES = [
@@ -14,14 +14,26 @@ const Dashboard = ({ onLogout }) => {
   const [isLoading, setIsLoading] = useState(true);
   
   // State สำหรับจัดการหน้าจอ
-  const [activeTab, setActiveTab] = useState('report'); // 'report' หรือ 'manage'
+  const [activeTab, setActiveTab] = useState('report'); 
   const [searchTerm, setSearchTerm] = useState('');
   
   // State สำหรับฟอร์มเพิ่มพนักงาน
   const [newEmpId, setNewEmpId] = useState('');
   const [newEmpName, setNewEmpName] = useState('');
 
-  // 1. ดึงข้อมูล Report (รวมรายชื่อพนักงานและ Progress)
+  // ✅ STATE ใหม่: สำหรับ Modal ยืนยัน (แทน window.confirm)
+  const [confirmModal, setConfirmModal] = useState(null); // { title, message, onConfirm }
+
+  // ✅ STATE ใหม่: สำหรับแจ้งเตือน (แทน window.alert)
+  const [notification, setNotification] = useState(null); // { type: 'success'|'error', message }
+
+  // ฟังก์ชันแสดงแจ้งเตือน (Toast)
+  const showToast = (type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000); // หายไปเองใน 3 วิ
+  };
+
+  // 1. ดึงข้อมูล Report
   const fetchReport = () => {
     fetch('https://training-api-pvak.onrender.com/api/admin/report')
       .then(res => res.json())
@@ -39,7 +51,6 @@ const Dashboard = ({ onLogout }) => {
 
   useEffect(() => {
     fetchReport();
-    // ถ้าอยู่หน้าจัดการคน ไม่ต้อง Auto Refresh บ่อย (เดี๋ยวพิมพ์ๆ อยู่แล้วหาย)
     if (activeTab === 'report') {
       const interval = setInterval(fetchReport, 10000);
       return () => clearInterval(interval);
@@ -49,7 +60,7 @@ const Dashboard = ({ onLogout }) => {
   // 2. ฟังก์ชันเพิ่มพนักงาน
   const handleAddEmployee = async (e) => {
     e.preventDefault();
-    if (!newEmpId || !newEmpName) return alert("กรุณากรอกข้อมูลให้ครบ");
+    if (!newEmpId || !newEmpName) return showToast('error', "กรุณากรอกข้อมูลให้ครบ");
 
     try {
       const res = await fetch('https://training-api-pvak.onrender.com/api/admin/add-employee', {
@@ -60,44 +71,56 @@ const Dashboard = ({ onLogout }) => {
       const data = await res.json();
       
       if (data.success) {
-        alert("✅ เพิ่มพนักงานเรียบร้อย");
+        showToast('success', "✅ เพิ่มพนักงานเรียบร้อย");
         setNewEmpId('');
         setNewEmpName('');
-        fetchReport(); // โหลดข้อมูลใหม่ทันที
+        fetchReport(); 
       } else {
-        alert("❌ " + data.message);
+        showToast('error', "❌ " + data.message);
       }
-    } catch (error) { alert("Error connecting server"); }
+    } catch (error) { showToast('error', "Error connecting server"); }
   };
 
-  // 3. ฟังก์ชันลบพนักงาน (ลาออก)
-  const handleDeleteEmployee = async (id, name) => {
-    if (!window.confirm(`⚠️ ยืนยันการลบพนักงาน?\n\nชื่อ: ${name}\nรหัส: ${id}\n\n(ข้อมูลการเรียนของคนนี้จะถูกลบทั้งหมด)`)) return;
-
-    try {
-      const res = await fetch('https://training-api-pvak.onrender.com/api/admin/delete-employee', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeId: id })
-      });
-      if (res.ok) {
-        alert("🗑️ ลบข้อมูลเรียบร้อย");
-        fetchReport();
+  // 3. เตรียมการลบ (เปิด Modal แทน confirm)
+  const confirmDeleteEmployee = (id, name) => {
+    setConfirmModal({
+      title: '⚠️ ยืนยันการลบพนักงาน',
+      message: `คุณต้องการลบ "${name}" (${id}) ใช่หรือไม่?\nข้อมูลการเรียนทั้งหมดจะหายไป`,
+      action: async () => {
+        try {
+          const res = await fetch('https://training-api-pvak.onrender.com/api/admin/delete-employee', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ employeeId: id })
+          });
+          if (res.ok) {
+            showToast('success', "🗑️ ลบข้อมูลเรียบร้อย");
+            fetchReport();
+          }
+        } catch (error) { showToast('error', "Failed to delete"); }
+        setConfirmModal(null); // ปิด Modal
       }
-    } catch (error) { alert("Failed to delete"); }
+    });
   };
 
-  // 4. ฟังก์ชัน Reset Progress (ของเดิม)
-  const handleReset = async (employeeId, employeeName) => {
-    if (!window.confirm(`ยืนยันรีเซ็ตการเรียนของ: ${employeeName}?`)) return;
-    try {
-      await fetch('https://training-api-pvak.onrender.com/api/admin/reset-progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeId })
-      });
-      fetchReport();
-    } catch (error) { console.error(error); }
+  // 4. เตรียมการรีเซ็ต (เปิด Modal แทน confirm)
+  const confirmReset = (employeeId, employeeName) => {
+    setConfirmModal({
+      title: '🔄 ยืนยันรีเซ็ตผลการเรียน',
+      message: `คุณต้องการล้างประวัติการเรียนของ "${employeeName}" ทั้งหมดใช่หรือไม่?`,
+      action: async () => {
+        try {
+          await fetch('https://training-api-pvak.onrender.com/api/admin/reset-progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ employeeId })
+          });
+          showToast('success', "รีเซ็ตข้อมูลเรียบร้อย");
+          fetchReport();
+        } catch (error) { console.error(error); }
+        setConfirmModal(null); // ปิด Modal
+      }
+    });
   };
 
   // Logic ค้นหา
@@ -115,6 +138,55 @@ const Dashboard = ({ onLogout }) => {
           <button className="btn-logout" onClick={onLogout}>ออกจากระบบ</button>
         </div>
       </nav>
+
+      {/* ✅ Notification Toast Overlay */}
+      {notification && (
+        <div style={{
+          position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
+          background: notification.type === 'success' ? '#10b981' : '#ef4444',
+          color: 'white', padding: '15px 25px', borderRadius: '8px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)', animation: 'fadeIn 0.3s'
+        }}>
+          {notification.message}
+        </div>
+      )}
+
+      {/* ✅ Custom Modal Overlay (แทน window.confirm) */}
+      {confirmModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'white', padding: '25px', borderRadius: '12px',
+            maxWidth: '400px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{ marginTop: 0, color: '#1f2937' }}>{confirmModal.title}</h3>
+            <p style={{ color: '#4b5563', whiteSpace: 'pre-line' }}>{confirmModal.message}</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+              <button 
+                onClick={() => setConfirmModal(null)}
+                style={{
+                  background: 'white', border: '1px solid #d1d5db', padding: '8px 16px',
+                  borderRadius: '6px', cursor: 'pointer', color: '#374151'
+                }}
+              >
+                ยกเลิก
+              </button>
+              <button 
+                onClick={confirmModal.action}
+                style={{
+                  background: '#ef4444', border: 'none', padding: '8px 16px',
+                  borderRadius: '6px', cursor: 'pointer', color: 'white', fontWeight: 'bold'
+                }}
+              >
+                ยืนยันทำรายการ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="main-container">
         
@@ -142,7 +214,7 @@ const Dashboard = ({ onLogout }) => {
             </button>
         </div>
 
-        {/* --- เนื้อหา TAB 1: REPORT (หน้าเดิม) --- */}
+        {/* --- เนื้อหา TAB 1: REPORT --- */}
         {activeTab === 'report' && (
           <>
              <div className="toolbar">
@@ -187,7 +259,8 @@ const Dashboard = ({ onLogout }) => {
                                 )
                             })}
                             <td style={{textAlign:'center'}}>
-                                <button className="btn-reset" onClick={() => handleReset(emp.id, emp.name)}>🔄</button>
+                                {/* 🔥 ใช้ confirmReset แทน handleReset เดิม */}
+                                <button className="btn-reset" onClick={() => confirmReset(emp.id, emp.name)}>🔄</button>
                             </td>
                         </tr>
                         ))}
@@ -198,11 +271,10 @@ const Dashboard = ({ onLogout }) => {
           </>
         )}
 
-        {/* --- เนื้อหา TAB 2: MANAGE EMPLOYEES (หน้าใหม่) --- */}
+        {/* --- เนื้อหา TAB 2: MANAGE EMPLOYEES --- */}
         {activeTab === 'manage' && (
           <div style={{ display:'grid', gridTemplateColumns: '1fr 2fr', gap:'20px' }}>
               
-              {/* ฝั่งซ้าย: ฟอร์มเพิ่มคน */}
               <div className="card" style={{ background:'white', padding:'20px', borderRadius:'12px', height:'fit-content' }}>
                   <h3 style={{marginTop:0}}>➕ เพิ่มพนักงานใหม่</h3>
                   <form onSubmit={handleAddEmployee}>
@@ -228,7 +300,6 @@ const Dashboard = ({ onLogout }) => {
                   </form>
               </div>
 
-              {/* ฝั่งขวา: ตารางรายชื่อและปุ่มลบ */}
               <div className="card" style={{ background:'white', padding:'20px', borderRadius:'12px' }}>
                   <h3 style={{marginTop:0}}>🗑️ รายชื่อพนักงานในระบบ ({filteredEmployees.length})</h3>
                   <input 
@@ -252,8 +323,9 @@ const Dashboard = ({ onLogout }) => {
                                     <td style={{padding:'10px'}}>{emp.id}</td>
                                     <td style={{padding:'10px'}}>{emp.name}</td>
                                     <td style={{padding:'10px', textAlign:'center'}}>
+                                        {/* 🔥 ใช้ confirmDeleteEmployee แทน handleDelete เดิม */}
                                         <button 
-                                            onClick={() => handleDeleteEmployee(emp.id, emp.name)}
+                                            onClick={() => confirmDeleteEmployee(emp.id, emp.name)}
                                             style={{
                                                 background:'#fee2e2', color:'#ef4444', border:'none', 
                                                 padding:'5px 10px', borderRadius:'6px', cursor:'pointer'

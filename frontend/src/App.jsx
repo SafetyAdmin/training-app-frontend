@@ -168,7 +168,7 @@ function App() {
                <h2 style={{marginTop:0}}>{selectedCourse.icon} {selectedCourse.title}</h2>
                <TrainingVideoPlayer 
                   videoUrl={selectedCourse.url}
-                  employeeId={user.employeeId} 
+                  employeeId={user.employeeId}
                   employeeName={user.name}
                   courseId={selectedCourse.id}
                />

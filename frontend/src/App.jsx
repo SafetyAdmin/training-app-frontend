@@ -84,7 +84,7 @@ function App() {
       {/* --- Navbar --- */}
       <nav className="navbar">
         <div className="nav-left">
-          <div className="brand-logo">SEC Learning Center</div>
+          <div className="brand-logo">Learning Center</div>
           
           {/* ✅ แก้ไข: เมนูสลับแท็บได้จริง */}
           <div className="nav-menu">

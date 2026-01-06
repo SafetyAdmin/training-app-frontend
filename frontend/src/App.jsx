@@ -89,6 +89,22 @@ function App() {
             <span style={{fontSize: '0.75rem', color: '#6b7280'}}>พนักงาน</span>
           </div>
           <div className="profile-circle" title={user.name}></div>
+          <button 
+            onClick={() => setUser(null)}
+            style={{
+              marginLeft: '10px',
+              padding: '6px 12px',
+              border: '1px solid #fee2e2',
+              backgroundColor: '#fff1f2',
+              color: '#ef4444',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: '500'
+            }}
+          >
+            ออก
+          </button>
         </div>
       </nav>
 

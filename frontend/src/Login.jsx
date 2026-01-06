@@ -9,14 +9,14 @@ const Login = ({ onLogin }) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // 1. เช็ค Admin (ทางลัดสำหรับ HR)
+    // 1. เช็ค Admin (แก้ให้ key ตรงกันด้วยเพื่อความชัวร์)
     if (employeeId.toLowerCase() === 'admin') {
-      onLogin({ id: 'ADMIN', name: 'HR Admin', role: 'admin' });
+      onLogin({ employeeId: 'ADMIN', name: 'HR Admin', role: 'admin' });
       return;
     }
 
     try {
-      // 2. ยิงไปเช็คกับ Server ว่ารหัสนี้มีในโรงงานไหม?
+      // 2. ยิง API Login
       const res = await fetch('https://training-api-pvak.onrender.com/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -26,14 +26,13 @@ const Login = ({ onLogin }) => {
       const data = await res.json();
 
       if (data.success) {
-        // ✅ ผ่าน! (Server เจอชื่อในระบบ)
+        // ✅ จุดที่แก้ไข: เปลี่ยนจาก id เป็น employeeId
         onLogin({ 
-          id: data.employeeId, 
+          employeeId: data.employeeId, // 🔥 แก้ตรงนี้ครับ
           name: data.name, 
           role: 'employee' 
         });
       } else {
-        // ❌ ไม่ผ่าน (Server บอกว่าไม่มี)
         alert("⛔️ ไม่พบรหัสพนักงานนี้ในระบบ\nกรุณาติดต่อ HR เพื่อลงทะเบียน");
       }
     } catch (err) {

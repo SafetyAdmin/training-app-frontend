@@ -1,28 +1,28 @@
-/* App.css - Combined (SEC Learning Style + Admin Audit) */
+/* src/App.css */
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* ธีมสีใหม่ (SEC Style - ม่วงน้ำเงิน) */
+  /* ธีมสีหลัก */
   --primary: #4f46e5;       
   --primary-light: #818cf8;
   --primary-dark: #3730a3;
   
-  /* สีสถานะ (สำหรับ Admin) */
+  /* สีสถานะ */
   --secondary: #64748b;
   --danger: #ef4444;
   --success: #10b981;
   --warning: #f59e0b;
   
-  /* พื้นหลังและตัวหนังสือ */
+  /* พื้นหลัง */
   --bg-body: #f3f4f6;
   --surface: #ffffff;
   --text-main: #1f2937;
   --text-muted: #6b7280;
   
   /* UI Config */
-  --radius: 16px;
+  --radius: 12px;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 body {
@@ -33,7 +33,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* --- 1. Navbar (ใช้ร่วมกันทั้ง Student & Admin) --- */
+/* --- Navbar --- */
 .navbar {
   background: var(--surface);
   height: 64px;
@@ -47,180 +47,131 @@ body {
   z-index: 100;
   box-shadow: var(--shadow-sm);
 }
-
-.nav-left { display: flex; align-items: center; gap: 2rem; }
-.brand-logo { font-size: 1.2rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;}
-.nav-menu { display: flex; gap: 1.5rem; font-weight: 500; color: var(--text-main); cursor: pointer; }
-.nav-menu span:hover { color: var(--primary); }
-.nav-right { display: flex; gap: 1rem; align-items: center; }
-
-/* ปุ่มและไอคอนบน Navbar */
-.icon-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); }
-.profile-circle { width: 32px; height: 32px; background: #e5e7eb; border-radius: 50%; }
-.user-profile { display: flex; align-items: center; gap: 1rem; font-size: 0.95rem; }
+.brand-logo { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
 .btn-logout {
   background: transparent; border: 1px solid #e2e8f0; padding: 0.4rem 0.8rem;
   border-radius: 6px; color: var(--secondary); cursor: pointer; transition: all 0.2s;
-  font-family: 'Sarabun', sans-serif; font-size: 0.85rem;
+  font-family: 'Sarabun';
 }
 .btn-logout:hover { background: #fef2f2; color: var(--danger); border-color: #fee2e2; }
 
-
-/* --- 2. Student View Styles (SEC LMS Design) --- */
-
-.dashboard-container {
+/* --- Layout Containers --- */
+.dashboard-container, .main-container {
   max-width: 1200px;
   margin: 2rem auto;
   padding: 0 1.5rem;
 }
 
-/* แถบเลือกหมวดหมู่ด้านบน (Gradient Cards) */
-.category-filter-scroll {
-  display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; margin-bottom: 2rem;
-}
-.category-filter-scroll::-webkit-scrollbar { height: 6px; }
-.category-filter-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-
-.filter-card {
-  min-width: 200px;
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  color: white; padding: 1.5rem; border-radius: var(--radius);
-  cursor: pointer; box-shadow: var(--shadow-card);
-  transition: transform 0.2s; display: flex; flex-direction: column;
-  justify-content: space-between; height: 80px;
-}
-.filter-card:hover { transform: translateY(-3px); }
-.filter-card.active { border: 2px solid #fbbf24; box-shadow: 0 0 0 2px #fff inset; }
-.filter-card h4 { margin: 0; font-size: 0.95rem; font-weight: 600; }
-.filter-card span { font-size: 0.8rem; opacity: 0.9; }
-
-/* กลุ่มรายวิชา (Group Card) */
-.section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #374151; }
-.groups-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem; }
-
-.group-card {
-  background: var(--surface); border-radius: var(--radius); padding: 1.5rem;
-  box-shadow: var(--shadow-card); border: 1px solid #f3f4f6;
-}
-.group-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 1.5rem; font-weight: 600; color: #111827; font-size: 1rem;
+/* --- Card Styles --- */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+  border: 1px solid #e2e8f0;
 }
 
-/* รายการวิชา (List Item) */
-.course-list-item {
-  display: flex; gap: 1rem; margin-bottom: 1.5rem; cursor: pointer;
-  transition: background 0.2s; padding: 0.5rem; border-radius: 8px;
+/* --- Inputs & Buttons --- */
+.input-field {
+  width: 100%; padding: 10px; border: 1px solid #cbd5e1;
+  border-radius: 8px; box-sizing: border-box; font-family: 'Sarabun';
 }
-.course-list-item:hover { background: #f9fafb; }
+.btn { padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
 
-.course-thumb {
-  width: 120px; height: 80px; background: #e0e7ff; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 2rem; color: var(--primary); flex-shrink: 0;
+/* --- 🔥 NEW TABLE STYLES (Sticky & Compact) --- */
+.table-wrapper {
+  max-height: 75vh;
+  overflow: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  background: white;
+  position: relative;
 }
-.course-info { display: flex; flex-direction: column; justify-content: center; }
-.course-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; line-height: 1.4; }
-.course-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 0.8rem; align-items: center; }
 
-
-/* --- 3. Admin Dashboard Styles (Audit & Report) --- */
-
-.main-container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
-.section-header { text-align: center; margin-bottom: 2rem; }
-
-/* Stats Grid (KPIs) */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-.stat-card {
-  background: white; padding: 1.5rem; border-radius: 12px;
-  box-shadow: var(--shadow-sm); border: 1px solid #e2e8f0;
-  display: flex; align-items: center; gap: 1rem;
+table {
+  width: 100%;
+  border-collapse: separate; 
+  border-spacing: 0;
+  font-size: 0.85rem;
 }
-.stat-icon {
-  width: 48px; height: 48px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
-}
-.stat-info h3 { margin: 0; font-size: 1.8rem; color: var(--text-main); }
-.stat-info p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
 
-/* Toolbar & Search */
-.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-.search-box { position: relative; min-width: 300px; }
-.search-input {
-  width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Sarabun'; font-size: 0.95rem;
-}
-.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
-
-/* Buttons (Admin) */
-.btn-print {
-  background: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem;
-  border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
-  font-weight: 600; box-shadow: var(--shadow-sm);
-}
-.btn-print:hover { background: var(--primary-dark); }
-
-.btn-danger {
-  background: var(--danger); color: white; border: none; padding: 0.75rem 1.5rem;
-  border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
-}
-.btn-danger:hover { background: #dc2626; }
-
-.btn-reset {
-  background: white; border: 1px solid #e2e8f0; color: var(--secondary);
-  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-}
-.btn-reset:hover { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
-
-.confirm-box {
-  background: #fff1f2; border: 1px solid #fecdd3; padding: 0.5rem 1rem;
-  border-radius: 8px; display: flex; align-items: center; gap: 0.5rem;
-}
-.btn-confirm-yes { background: var(--danger); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
-.btn-confirm-no { background: white; color: var(--text-main); border: 1px solid #e2e8f0; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
-
-/* Table Styles */
-.table-container { background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-sm); overflow: hidden; border: 1px solid #e2e8f0; }
-table { width: 100%; border-collapse: collapse; }
 thead th {
-  background: #f8fafc; color: var(--secondary); font-weight: 600;
-  text-transform: uppercase; font-size: 0.85rem; padding: 1rem; border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  padding: 12px 8px;
+  border-bottom: 2px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 20; 
 }
-tbody tr { border-bottom: 1px solid #f1f5f9; }
-tbody tr:hover { background: #f8fafc; }
-tbody td { padding: 1rem; vertical-align: middle; }
 
-.status-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.85rem; font-weight: 500;
+/* คอลัมน์แรก (Sticky Column) */
+.sticky-col {
+  position: sticky;
+  left: 0;
+  background-color: white;
+  z-index: 10; 
+  border-right: 2px solid #e2e8f0;
+  box-shadow: 4px 0 8px rgba(0,0,0,0.03);
 }
+
+/* จุดตัดมุมซ้ายบน */
+thead th.sticky-col {
+  z-index: 30;
+  background-color: #f8fafc;
+}
+
+/* Hover Effect */
+tbody tr { transition: background 0.1s; }
+tbody tr:hover td { background-color: #f1f5f9; }
+tbody tr:hover .sticky-col { background-color: #f1f5f9; }
+
+tbody td {
+  padding: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  border-right: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+/* Status Indicators */
+.status-cell {
+  display: flex; justify-content: center; align-items: center; height: 100%;
+}
+.badge-dot {
+  width: 12px; height: 12px; border-radius: 50%; display: inline-block;
+}
+.badge-none { background-color: #e2e8f0; }
+.badge-learning { background-color: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
+.btn-reset {
+  background: white; border: 1px solid #e2e8f0; color: #64748b;
+  width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-reset:hover { background: #fef2f2; color: #ef4444; border-color: #fee2e2; }
+
+/* --- Student View Specifics --- */
+.category-filter-scroll { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 10px; margin-bottom: 1.5rem; }
+.filter-card { min-width: 200px; padding: 1.5rem; border-radius: var(--radius); color: white; cursor: pointer; background: #374151; }
+.filter-card.active { border: 2px solid #fbbf24; }
+.groups-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; }
+.group-card { background: white; padding: 1.5rem; border-radius: var(--radius); }
+.course-list-item { display: flex; gap: 1rem; margin-bottom: 1rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; }
+.course-list-item:hover { background: #f9fafb; }
+.course-thumb { width: 100px; height: 70px; background: #e0e7ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+.status-badge { padding: 2px 8px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
 .status-completed { background: #dcfce7; color: #166534; }
 .status-pending { background: #fef3c7; color: #b45309; }
-.status-none { background: #f1f5f9; color: #cbd5e1; }
 
-
-/* --- 4. Print Styles (สำหรับเวลาสั่งพิมพ์รายงาน Audit) --- */
+/* Print Mode */
 @media print {
-  .navbar, .btn-print, .btn-danger, .btn-reset, .search-box, .category-filter-scroll {
-    display: none !important;
-  }
-  body, .main-container { background: white; margin: 0; padding: 0; max-width: 100%; }
-  .table-container { box-shadow: none; border: 1px solid #000; }
-  th, td { border: 1px solid #000; color: black !important; }
-  .status-badge { border: 1px solid #000; background: none !important; color: black !important; }
-  
-  .print-footer {
-    display: flex !important; justify-content: space-between;
-    margin-top: 50px; padding-top: 20px; border-top: 1px solid #000;
-  }
-}
-.print-footer { display: none; }
-
-/* Responsive */
-@media (max-width: 768px) {
-  .groups-grid { grid-template-columns: 1fr; }
-  .navbar { padding: 0 1rem; }
-  .nav-menu, .nav-right { display: none; } /* ปรับตามความเหมาะสม */
-  .stats-grid { grid-template-columns: 1fr; }
+  .navbar, .toolbar, .btn, .search-box, .btn-reset { display: none !important; }
+  .table-wrapper { max-height: none; overflow: visible; box-shadow: none; }
+  th, td { border: 1px solid #000; font-size: 10px; color: black !important; }
+  .sticky-col { position: static; box-shadow: none; border-right: 1px solid #000; }
 }

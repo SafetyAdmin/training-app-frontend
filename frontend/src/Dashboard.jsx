@@ -24,13 +24,13 @@ const Dashboard = ({ onLogout }) => {
   // ✅ STATE ใหม่: สำหรับ Modal ยืนยัน (แทน window.confirm)
   const [confirmModal, setConfirmModal] = useState(null); // { title, message, onConfirm }
 
-  // ✅ STATE ใหม่: สำหรับแจ้งเตือน (แทน window.alert)
+  // ✅ STATE ใหม่: สำหรับแจ้งเตือน (Toast)
   const [notification, setNotification] = useState(null); // { type: 'success'|'error', message }
 
   // ฟังก์ชันแสดงแจ้งเตือน (Toast)
   const showToast = (type, message) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3000); // หายไปเองใน 3 วิ
+    setTimeout(() => setNotification(null), 3000); 
   };
 
   // 1. ดึงข้อมูล Report
@@ -81,7 +81,7 @@ const Dashboard = ({ onLogout }) => {
     } catch (error) { showToast('error', "Error connecting server"); }
   };
 
-  // 3. เตรียมการลบ (เปิด Modal แทน confirm)
+  // 3. เตรียมการลบพนักงานรายคน
   const confirmDeleteEmployee = (id, name) => {
     setConfirmModal({
       title: '⚠️ ยืนยันการลบพนักงาน',
@@ -98,12 +98,12 @@ const Dashboard = ({ onLogout }) => {
             fetchReport();
           }
         } catch (error) { showToast('error', "Failed to delete"); }
-        setConfirmModal(null); // ปิด Modal
+        setConfirmModal(null); 
       }
     });
   };
 
-  // 4. เตรียมการรีเซ็ต (เปิด Modal แทน confirm)
+  // 4. เตรียมการรีเซ็ตรายคน
   const confirmReset = (employeeId, employeeName) => {
     setConfirmModal({
       title: '🔄 ยืนยันรีเซ็ตผลการเรียน',
@@ -118,9 +118,37 @@ const Dashboard = ({ onLogout }) => {
           showToast('success', "รีเซ็ตข้อมูลเรียบร้อย");
           fetchReport();
         } catch (error) { console.error(error); }
-        setConfirmModal(null); // ปิด Modal
+        setConfirmModal(null);
       }
     });
+  };
+
+  // 🔥 5. (กู้คืนมาแล้ว) ฟังก์ชันรีเซ็ตทั้งหมด (Reset All)
+  const confirmResetAll = () => {
+    setConfirmModal({
+      title: '🧨 ล้างข้อมูลระบบทั้งหมด?',
+      message: '⚠️ คำเตือน: คุณกำลังจะลบประวัติการเรียนของพนักงาน "ทุกคน" ในระบบ\n\nการกระทำนี้ไม่สามารถกู้คืนได้ ยืนยันที่จะทำรายการหรือไม่?',
+      action: async () => {
+        try {
+          const res = await fetch('https://training-api-pvak.onrender.com/api/reset-all-progress', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          if (res.ok) {
+            showToast('success', "🗑️ ล้างระบบเรียบร้อยแล้ว");
+            fetchReport();
+          } else {
+            showToast('error', "Failed to reset");
+          }
+        } catch (err) { showToast('error', "Server Error"); }
+        setConfirmModal(null);
+      }
+    });
+  };
+
+  // 🖨️ ฟังก์ชันพิมพ์รายงาน (แถมให้กลับมาด้วยครับ)
+  const handlePrint = () => {
+    window.print(); // สั่งพิมพ์แบบปกติ (Browser Print)
   };
 
   // Logic ค้นหา
@@ -139,7 +167,7 @@ const Dashboard = ({ onLogout }) => {
         </div>
       </nav>
 
-      {/* ✅ Notification Toast Overlay */}
+      {/* ✅ Notification Toast */}
       {notification && (
         <div style={{
           position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
@@ -151,7 +179,7 @@ const Dashboard = ({ onLogout }) => {
         </div>
       )}
 
-      {/* ✅ Custom Modal Overlay (แทน window.confirm) */}
+      {/* ✅ Custom Modal Overlay */}
       {confirmModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -163,7 +191,7 @@ const Dashboard = ({ onLogout }) => {
             maxWidth: '400px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
           }}>
             <h3 style={{ marginTop: 0, color: '#1f2937' }}>{confirmModal.title}</h3>
-            <p style={{ color: '#4b5563', whiteSpace: 'pre-line' }}>{confirmModal.message}</p>
+            <p style={{ color: '#4b5563', whiteSpace: 'pre-line', lineHeight: '1.5' }}>{confirmModal.message}</p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
               <button 
                 onClick={() => setConfirmModal(null)}
@@ -190,7 +218,7 @@ const Dashboard = ({ onLogout }) => {
 
       <div className="main-container">
         
-        {/* Tab Menu Selection */}
+        {/* Tab Menu */}
         <div style={{ display:'flex', gap:'10px', marginBottom:'20px', borderBottom:'1px solid #e5e7eb', paddingBottom:'10px' }}>
             <button 
                 onClick={() => setActiveTab('report')}
@@ -225,8 +253,32 @@ const Dashboard = ({ onLogout }) => {
                         value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div style={{textAlign:'right', color:'#6b7280', fontSize:'14px'}}>
-                    ทั้งหมด: {employees.length} คน
+                
+                {/* 🔥 คืนชีพปุ่ม Reset All ตรงนี้ครับ */}
+                <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
+                    <div style={{color:'#6b7280', fontSize:'14px', marginRight:'10px', display: 'none'}}>
+                        (ทั้งหมด: {employees.length})
+                    </div>
+                    
+                    <button 
+                      onClick={handlePrint}
+                      style={{
+                        background:'#3b82f6', color:'white', border:'none', padding:'8px 16px', 
+                        borderRadius:'6px', cursor:'pointer', fontWeight:'bold'
+                      }}
+                    >
+                      🖨️ Print
+                    </button>
+
+                    <button 
+                      onClick={confirmResetAll}
+                      style={{
+                        background:'#ef4444', color:'white', border:'none', padding:'8px 16px', 
+                        borderRadius:'6px', cursor:'pointer', fontWeight:'bold'
+                      }}
+                    >
+                      🗑️ รีเซ็ตระบบ (All)
+                    </button>
                 </div>
              </div>
 
@@ -259,7 +311,6 @@ const Dashboard = ({ onLogout }) => {
                                 )
                             })}
                             <td style={{textAlign:'center'}}>
-                                {/* 🔥 ใช้ confirmReset แทน handleReset เดิม */}
                                 <button className="btn-reset" onClick={() => confirmReset(emp.id, emp.name)}>🔄</button>
                             </td>
                         </tr>
@@ -323,7 +374,6 @@ const Dashboard = ({ onLogout }) => {
                                     <td style={{padding:'10px'}}>{emp.id}</td>
                                     <td style={{padding:'10px'}}>{emp.name}</td>
                                     <td style={{padding:'10px', textAlign:'center'}}>
-                                        {/* 🔥 ใช้ confirmDeleteEmployee แทน handleDelete เดิม */}
                                         <button 
                                             onClick={() => confirmDeleteEmployee(emp.id, emp.name)}
                                             style={{

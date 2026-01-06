@@ -153,6 +153,55 @@ const Dashboard = ({ onLogout }) => {
     });
   };
 
+  // 🔥 ฟังก์ชันพิมพ์แบบใหม่ (New Window) เพื่อแก้ปัญหา Sandbox
+  const handlePrint = () => {
+    // 1. เปิดหน้าต่างใหม่
+    const printWindow = window.open('', '', 'height=600,width=900');
+    
+    if (!printWindow) {
+        alert("Pop-up ถูกบล็อก! กรุณากดอนุญาต Pop-up หรือเปิดเว็บในแท็บใหม่");
+        return;
+    }
+
+    // 2. ดึง HTML ของตาราง
+    const tableContent = document.querySelector('.table-wrapper')?.outerHTML || "<h1>ไม่พบข้อมูลตาราง</h1>";
+
+    // 3. เขียนข้อมูลลงไปในหน้าต่างใหม่
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Training Report</title>
+          <style>
+             body { font-family: 'Sarabun', sans-serif; padding: 20px; }
+             h2 { text-align: center; margin-bottom: 20px; }
+             /* จัด CSS สำหรับพิมพ์โดยเฉพาะ */
+             .table-wrapper { box-shadow: none !important; border: 1px solid #000 !important; max-height: none !important; overflow: visible !important; }
+             table { width: 100%; border-collapse: collapse; }
+             th, td { border: 1px solid #000 !important; padding: 5px; font-size: 10px; color: black !important; text-align: center; }
+             th { background-color: #eee !important; -webkit-print-color-adjust: exact; }
+             .sticky-col { position: static !important; box-shadow: none !important; border-right: 1px solid #000 !important; text-align: left !important; }
+             .badge-dot { border: 1px solid #000; display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+             .badge-pass { background-color: black !important; } /* สีดำเวลาพิมพ์ */
+             .btn-reset { display: none; } /* ซ่อนปุ่ม */
+          </style>
+        </head>
+        <body>
+          <h2>สรุปผลการฝึกอบรม (Training Report)</h2>
+          <p>วันที่พิมพ์: ${new Date().toLocaleString('th-TH')}</p>
+          ${tableContent}
+          <script>
+            setTimeout(() => {
+                window.print();
+                // window.close(); 
+            }, 500);
+          </script>
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+  };
+
   const filteredEmployees = employees.filter(emp => 
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     emp.id.toLowerCase().includes(searchTerm.toLowerCase())
@@ -225,7 +274,7 @@ const Dashboard = ({ onLogout }) => {
                     <input type="text" className="search-input" placeholder="ค้นหา..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
                 <div style={{display:'flex', gap:'10px'}}>
-                    <button onClick={() => window.print()} className="btn" style={{background:'#3b82f6', color:'white'}}>🖨️ Print</button>
+                    <button onClick={handlePrint} className="btn" style={{background:'#3b82f6', color:'white'}}>🖨️ Print</button>
                     <button onClick={confirmResetAll} className="btn" style={{background:'#ef4444', color:'white'}}>🗑️ Reset All</button>
                 </div>
              </div>

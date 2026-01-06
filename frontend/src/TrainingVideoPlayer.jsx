@@ -125,8 +125,8 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
 
     setPlayedSeconds(currentSec);
 
-    // บันทึกทุก 0 วินาที
-    if (Math.abs(currentSec - lastSaveTime.current) >= 0) {
+    // บันทึกทุก 5 วินาที
+    if (Math.abs(currentSec - lastSaveTime.current) >= 5) {
       saveProgress(currentSec, totalDuration);
       lastSaveTime.current = currentSec;
     }

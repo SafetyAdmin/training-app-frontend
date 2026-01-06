@@ -61,35 +61,59 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
 
   // 3. ดึงประวัติเวลาเรียนจาก Server
   useEffect(() => {
-    if (!videoUrl || !employeeId) return;
+    // เช็คก่อนว่าข้อมูลครบไหม
+    if (!videoUrl || !employeeId || !courseId) {
+      console.warn("❌ ข้อมูลไม่ครบ:", { videoUrl, employeeId, courseId });
+      setStatusMsg('⚠️ ข้อมูลระบุตัวตนไม่ครบ (กรุณาล็อกอินใหม่)');
+      return;
+    }
     
+    // ตั้งเวลาแจ้งเตือนถ้า Server ตอบช้า (Render Cold Start)
+    const timeoutMsg = setTimeout(() => {
+      setStatusMsg('⏳ Server กำลังตื่น (อาจใช้เวลา 1-2 นาที)...');
+    }, 5000); // 5 วินาทีถ้ายังไม่มา ให้เปลี่ยนข้อความ
+
     setStatusMsg('⏳ กำลังดึงประวัติการเรียน...');
+    console.log("🚀 กำลังเรียก API ไปที่:", `https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`);
+
     fetch(`https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
       .then(data => {
+        clearTimeout(timeoutMsg); // ยกเลิกข้อความเตือน Server ช้า
+        console.log("✅ ได้รับข้อมูล:", data);
+
         const savedTime = data.currentTime || 0;
         
-        // 🔥 จุดแก้ไขสำคัญ: อัปเดต Refs ทั้งหมดให้เท่ากับค่าที่ดึงมา
+        // อัปเดต Refs และ State
         savedTimeRef.current = savedTime;
         maxWatchedTime.current = savedTime; 
-        lastSaveTime.current = savedTime; // เพื่อไม่ให้บันทึกซ้ำทันทีที่ Resume
+        lastSaveTime.current = savedTime;
 
         setPlayedSeconds(savedTime);
 
-        if (savedTime > 5) { // ถ้าเคยดูเกิน 5 วิ ค่อยถาม Resume
+        if (savedTime > 5) {
           setStatusMsg(`✅ พบประวัติเดิม: ${Math.floor(savedTime)} วินาที`);
           setShowResumeBtn(true);
         } else {
           setStatusMsg('✅ เริ่มเรียนใหม่');
           setShowResumeBtn(false);
-          setPlaying(true); // ถ้าไม่มีประวัติ ให้เล่นเลย
+          setPlaying(true);
         }
       })
       .catch((err) => {
-        console.error(err);
-        setStatusMsg('⚠️ ไม่สามารถดึงประวัติได้ (เริ่มใหม่)');
+        clearTimeout(timeoutMsg);
+        console.error("❌ Error fetching progress:", err);
+        setStatusMsg('⚠️ เชื่อมต่อ Server ไม่ได้ (ระบบจะบันทึกใหม่)');
+        // กรณี Error ให้ยอมให้เล่นได้เลย แต่เริ่มที่ 0
         setPlaying(true);
       });
+      
+      // Cleanup function
+      return () => clearTimeout(timeoutMsg);
+
   }, [employeeId, courseId, videoUrl]);
 
   // 4. ฟังก์ชันกดปุ่ม "ดูต่อจากเดิม" (Resume)

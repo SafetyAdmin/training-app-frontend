@@ -89,7 +89,21 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
 
   // ✅ ฟังก์ชันสลับ Native PiP
   const togglePip = () => {
-    setPipMode(!pipMode);
+    try {
+      if (document.pictureInPictureElement) {
+        document.exitPictureInPicture();
+        setPipMode(false);
+      } else if (document.pictureInPictureEnabled) {
+         // ถ้า Browser รองรับ ให้สั่งผ่าน ReactPlayer Prop
+         setPipMode(!pipMode);
+      } else {
+        alert("Browser ของคุณไม่รองรับฟีเจอร์ Picture-in-Picture");
+      }
+    } catch(err) {
+      console.error("PiP Error:", err);
+      // Fallback: ถ้ากดปุ่มไม่ติด ให้ลองใช้ Prop อย่างเดียว
+      setPipMode(!pipMode); 
+    }
   };
 
   return (
@@ -148,9 +162,9 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
           controls={true}
           playing={playing} 
           
-          // ✅ เปิดใช้งาน Native PiP
+          // ✅ เปิดใช้งาน Native PiP ผ่าน Prop
           pip={pipMode}
-          // เมื่อ User กดเปิดปิดที่ตัว Player เอง ให้ Sync State กลับมา
+          // เมื่อ User กดปิดที่ตัว Player เอง ให้ Sync State กลับมา
           onEnablePIP={() => setPipMode(true)}
           onDisablePIP={() => setPipMode(false)}
 

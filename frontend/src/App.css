@@ -227,6 +227,101 @@ body {
 .status-completed { background: #dcfce7; color: #166534; }
 .status-pending { background: #fef3c7; color: #b45309; }
 
+
+/* =========================================
+   📈 DATA TABLE (FIXED)
+   ========================================= */
+.table-wrapper {
+  max-height: 70vh;
+  overflow: auto;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  background: white;
+  border: 1px solid var(--slate-200);
+  margin-top: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate; 
+  border-spacing: 0;
+  font-size: 0.9rem;
+  min-width: 1000px; /* บังคับความกว้างขั้นต่ำเพื่อให้ Scroll แนวนอนทำงาน */
+}
+
+/* Header */
+thead th {
+  background-color: #f1f5f9; /* สีพื้นหลังหัวตารางให้เข้มขึ้นนิดนึง */
+  color: var(--slate-700);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 1rem 0.5rem;
+  border-bottom: 2px solid var(--slate-300);
+  border-right: 1px solid var(--slate-200);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 20; 
+  height: 60px; /* กำหนดความสูงให้เท่ากัน */
+  vertical-align: middle;
+}
+
+/* Sticky Column (Employee Name) */
+.sticky-col {
+  position: sticky;
+  left: 0;
+  background-color: white;
+  z-index: 15; 
+  border-right: 2px solid var(--slate-300); /* เส้นกั้นแนวตั้งให้ชัด */
+  box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+}
+
+/* Fix corner intersection */
+thead th.sticky-col {
+  z-index: 30;
+  background-color: #f1f5f9;
+  border-bottom: 2px solid var(--slate-300);
+}
+
+/* Rows */
+tbody tr { transition: background 0.1s; }
+tbody tr:hover td { background-color: #f8fafc; }
+tbody tr:hover .sticky-col { background-color: #f8fafc; }
+
+tbody td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--slate-200);
+  border-right: 1px solid #f8fafc; /* เส้นจางๆ แนวตั้ง */
+  vertical-align: middle;
+  text-align: center; /* จัดกึ่งกลางให้เห็นจุด */
+  height: 50px;
+}
+
+/* Cell เนื้อหาพนักงาน (ชิดซ้าย) */
+tbody td.sticky-col {
+  text-align: left;
+  padding-left: 1.5rem;
+  color: var(--slate-700);
+}
+
+/* Status Indicators (ปรับให้ใหญ่และชัดขึ้น) */
+.status-cell {
+  display: flex; justify-content: center; align-items: center;
+  width: 100%; height: 100%;
+}
+
+.badge-dot {
+  width: 16px; height: 16px; /* ใหญ่ขึ้น */
+  border-radius: 50%; 
+  display: inline-block;
+  transition: transform 0.2s;
+}
+.badge-dot:hover { transform: scale(1.2); cursor: help; }
+
+.badge-none { background-color: #e2e8f0; border: 1px solid #cbd5e1; } /* สีเทา */
+.badge-learning { background-color: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; } /* สีส้ม */
+.badge-pass { background-color: #10b981; box-shadow: 0 0 0 2px #dcfce7; } /* สีเขียว */
+
 /* =========================================
    📱 MOBILE RESPONSIVE
    ========================================= */

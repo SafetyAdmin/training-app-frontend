@@ -252,7 +252,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
           onEnded={handleEnded}
           onReady={() => setIsReady(true)}
           config={{
-            youtube: { playerVars: { showinfo: 1, modestbranding: 1, rel: 0 } },
+            youtube: { playerVars: { showinfo: 1, modestbranding: 1, rel: 0, fs: 1 } },
             file: { attributes: { controlsList: 'nodownload', playsInline: true } }
           }}
         />

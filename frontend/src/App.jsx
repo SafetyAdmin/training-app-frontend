@@ -125,7 +125,7 @@ function App() {
                 {/* Categories Scroll */}
                 {!isLoadingCourses && (
                     <div className="category-filter-scroll">
-                    <div className={`filter-card ${activeCategory === 'All' ? 'active' : ''}`} onClick={() => setActiveCategory('All')} style={{background: '#374151'}}>
+                    <div className={`filter-card ${activeCategory === 'All' ? 'active' : ''}`} onClick={() => setActiveCategory('All')} style={{background: '#02d6fcff'}}>
                         <h4>Show All Resources</h4><span>{courses.length} courses</span>
                     </div>
                     {categories.map(cat => (

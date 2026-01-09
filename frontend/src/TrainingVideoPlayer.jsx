@@ -16,9 +16,6 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   const [isFloating, setIsFloating] = useState(false);
   const [floatRect, setFloatRect] = useState({ x: 0, y: 0, w: 480, h: 320 });
 
-  // --- STATE: Native PiP (ลอยนอกเว็บ) ---
-  const [isNativePiP, setIsNativePiP] = useState(false);
-
   // Refs Drag & Drop
   const dragRef = useRef(false);
   const resizeRef = useRef(false);
@@ -95,7 +92,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
     if (currentVideoUrl.current !== videoUrl) {
       setPlaying(false); setTotalDuration(0); setPlayedSeconds(0);
       maxWatchedTime.current = 0; savedTimeRef.current = 0; lastSaveTime.current = 0;
-      setIsReady(false); setShowResumeBtn(false); setIsFloating(false); setIsNativePiP(false);
+      setIsReady(false); setShowResumeBtn(false); setIsFloating(false);
       setStatusMsg('🔄 กำลังเปลี่ยนวิดีโอ...');
       currentVideoUrl.current = videoUrl;
     }
@@ -116,16 +113,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
 
   const handleManualResume = () => { setShowResumeBtn(false); if(playerRef.current) playerRef.current.seekTo(savedTimeRef.current); setTimeout(()=>setPlaying(true),300); };
   const handleStartNew = () => { setShowResumeBtn(false); savedTimeRef.current=0; maxWatchedTime.current=0; if(playerRef.current) playerRef.current.seekTo(0); setPlaying(true); };
-  const handleEnded = () => { saveProgress(totalDuration,totalDuration); setStatusMsg('🎉 จบแล้ว!'); setPlaying(false); setIsFloating(false); setIsNativePiP(false); };
-
-  // --- 🔥 Native PiP Toggle ---
-  const toggleNativePiP = () => {
-    setIsFloating(false);
-    if (!playing) setPlaying(true);
-    setTimeout(() => {
-        setIsNativePiP(!isNativePiP);
-    }, 500);
-  };
+  const handleEnded = () => { saveProgress(totalDuration,totalDuration); setStatusMsg('🎉 จบแล้ว!'); setPlaying(false); setIsFloating(false); };
 
   // --- STYLES ---
   const containerStyle = isFloating ? {
@@ -150,16 +138,10 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
         </div>
         
         <div style={{display:'flex', gap:'10px'}}>
-            <button onClick={() => { setIsFloating(!isFloating); setIsNativePiP(false); }}
+            <button onClick={() => setIsFloating(!isFloating)}
               style={{background: isFloating ? '#ef4444' : 'white', color: isFloating ? 'white' : '#4f46e5', border: '1px solid #4f46e5', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold'}}
             >
               {isFloating ? '❌ ปิดจอลอย' : '📺 จอลอย (ในเว็บ)'}
-            </button>
-
-            <button onClick={toggleNativePiP}
-              style={{background: isNativePiP ? '#ef4444' : '#4f46e5', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold'}}
-            >
-              {isNativePiP ? '❌ ปิดจอนอก' : '🚀 จอลอย (นอกเว็บ)'}
             </button>
         </div>
       </div>
@@ -193,17 +175,12 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
                     height="100%"
                     controls={true}
                     playing={playing} 
-                    
-                    pip={isNativePiP}
-                    onEnablePIP={() => setIsNativePiP(true)}
-                    onDisablePIP={() => setIsNativePiP(false)}
 
                     onDuration={(d) => setTotalDuration(d)}
                     onProgress={handleProgress}
                     onEnded={handleEnded}
                     onReady={() => setIsReady(true)}
                     
-                    // 🔥🔥 แก้ไข Config ตรงนี้ (สำคัญมาก) 🔥🔥
                     config={{
                         youtube: {
                             playerVars: { 
@@ -211,17 +188,12 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
                                 modestbranding: 1, 
                                 rel: 0, 
                                 playsinline: 1, 
-                                origin: window.location.origin // เพิ่ม origin
-                            },
-                            embedOptions: {
-                                // 🔥 บังคับให้ iframe อนุญาต PiP
-                                allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                origin: window.location.origin
                             }
                         },
                         file: {
                             attributes: {
-                                controlsList: 'nodownload',
-                                disablePictureInPicture: false
+                                controlsList: 'nodownload'
                             }
                         }
                     }}
@@ -236,16 +208,11 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
         )}
       </div>
       
-      {(isFloating || isNativePiP) && (
+      {isFloating && (
           <div style={{width: '100%', paddingTop: '56.25%', background: '#f1f5f9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #cbd5e1'}}>
               <span style={{color:'#64748b'}}>📺 วิดีโอกำลังเล่นในโหมดจอลอย...</span>
           </div>
       )}
-
-      {/* คำอธิบาย */}
-      <div style={{marginTop:'10px', fontSize:'0.85rem', color:'#64748b'}}>
-          💡 <b>เคล็ดลับ:</b> ถ้ากดปุ่มแล้วไม่ขึ้น ให้คลิกขวาที่วิดีโอ <b>2 ครั้ง</b> แล้วเลือก <b>"Picture in picture" (ภาพในภาพ)</b>
-      </div>
 
     </div>
   );

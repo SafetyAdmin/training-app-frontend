@@ -118,18 +118,11 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   const handleStartNew = () => { setShowResumeBtn(false); savedTimeRef.current=0; maxWatchedTime.current=0; if(playerRef.current) playerRef.current.seekTo(0); setPlaying(true); };
   const handleEnded = () => { saveProgress(totalDuration,totalDuration); setStatusMsg('🎉 จบแล้ว!'); setPlaying(false); setIsFloating(false); setIsNativePiP(false); };
 
-  // --- 🔥 Native PiP Toggle ---
+  // --- 🔥 ฟังก์ชันเปิด Native PiP ---
   const toggleNativePiP = () => {
-    // 1. ปิด Custom Floating
     setIsFloating(false);
-    
-    // 2. สั่งเล่นวิดีโอก่อนเสมอ (สำคัญมาก)
     if (!playing) setPlaying(true);
-
-    // 3. ใช้ setTimeout เพื่อรอให้ Video active
-    setTimeout(() => {
-        setIsNativePiP(!isNativePiP);
-    }, 500);
+    setTimeout(() => setIsNativePiP(!isNativePiP), 500);
   };
 
   // --- STYLES ---
@@ -199,7 +192,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
                     controls={true}
                     playing={playing} 
                     
-                    // ✅ Native PiP
+                    // ✅ Native PiP Control
                     pip={isNativePiP}
                     onEnablePIP={() => setIsNativePiP(true)}
                     onDisablePIP={() => setIsNativePiP(false)}
@@ -209,23 +202,16 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
                     onEnded={handleEnded}
                     onReady={() => setIsReady(true)}
                     
-                    // 🔥🔥 แก้ไข Config ตรงนี้เพื่อให้ PiP ทำงาน 100% 🔥🔥
+                    // 🔥🔥 แก้ไข Config ตรงนี้สำคัญมาก (อนุญาต PiP) 🔥🔥
                     config={{
                         youtube: {
                             playerVars: { 
                                 showinfo: 0, modestbranding: 1, rel: 0, 
-                                playsinline: 1, // สำคัญมากสำหรับ PiP
-                                origin: window.location.origin // ช่วยเรื่อง CORS
+                                playsinline: 1,
+                                origin: window.location.origin
                             },
                             embedOptions: {
-                                // 🔥 บังคับให้ iframe อนุญาต PiP
-                                allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            }
-                        },
-                        file: {
-                            attributes: {
-                                controlsList: 'nodownload',
-                                disablePictureInPicture: false // ห้ามปิด PiP
+                                allow: "autoplay; encrypted-media; picture-in-picture"
                             }
                         }
                     }}
@@ -240,15 +226,9 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
         )}
       </div>
       
-      {(isFloating || isNativePiP) && (
-          <div style={{width: '100%', paddingTop: '56.25%', background: '#f1f5f9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #cbd5e1'}}>
-              <span style={{color:'#64748b'}}>📺 วิดีโอกำลังเล่นในโหมดจอลอย...</span>
-          </div>
-      )}
-
       {/* คำอธิบาย */}
       <div style={{marginTop:'10px', fontSize:'0.85rem', color:'#64748b'}}>
-          💡 <b>เคล็ดลับ:</b> ถ้ากดปุ่มจอลอยแล้วไม่ขึ้น ให้คลิกขวาที่วิดีโอ <b>2 ครั้ง</b> แล้วเลือก <b>"Picture in picture"</b>
+          💡 <b>เคล็ดลับ:</b> หากกดปุ่มแล้วไม่ขึ้น ให้ <b>คลิกขวาที่วิดีโอ 2 ครั้ง</b> แล้วเลือก <b>"Picture in picture"</b>
       </div>
 
     </div>

@@ -246,14 +246,27 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
           height="100%"
           style={{ position: 'absolute', top: 0, left: 0 }}
           controls={true}
-          playing={playing} 
+          playing={playing}
           onDuration={(d) => setTotalDuration(d)}
           onProgress={handleProgress}
           onEnded={handleEnded}
           onReady={() => setIsReady(true)}
+          
+          // ✅ จุดที่ต้องแก้ (เพิ่ม config ให้รองรับ Fullscreen)
           config={{
-            youtube: { playerVars: { showinfo: 1, modestbranding: 1, rel: 0, fs: 1 } },
-            file: { attributes: { controlsList: 'nodownload', playsInline: true } }
+            youtube: { 
+              playerVars: { 
+                showinfo: 1, 
+                modestbranding: 1, 
+                rel: 0,
+                fs: 1, // บังคับให้ปุ่ม Fullscreen ทำงาน
+                playsinline: 0 // บังคับให้เล่นเต็มจอในมือถือ (iOS)
+              },
+              embedOptions: { 
+                // อนุญาตให้ iframe ทำงานเต็มประสิทธิภาพ
+                allowFullScreen: true 
+              }
+            }
           }}
         />
       </div>

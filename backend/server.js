@@ -127,8 +127,14 @@ app.get('/api/admin/report', async (req, res) => {
     const report = employees.map(emp => {
       const myProgress = progressList.filter(p => p.employeeId === emp.employeeId);
       const progressMap = {};
+      
       myProgress.forEach(p => {
-        progressMap[p.courseId] = { isCompleted: p.isCompleted, lastWatched: p.lastWatchedTime };
+        // 🔥 แก้ตรงนี้: เพิ่ม lastUpdated ส่งไปด้วย
+        progressMap[p.courseId] = { 
+            isCompleted: p.isCompleted, 
+            lastWatched: p.lastWatchedTime,
+            lastUpdated: p.lastUpdated // ✅ เพิ่มบรรทัดนี้
+        };
       });
       
       let lastSeen = '-';

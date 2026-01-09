@@ -250,81 +250,83 @@ const Dashboard = ({ onLogout }) => {
         {/* --- TAB 1: REPORT --- */}
         {activeTab === 'report' && (
           <>
+             {/* ... (ส่วน Toolbar เหมือนเดิม) ... */}
              <div className="toolbar">
-                {/* 1. กล่องค้นหา */}
-                <div className="search-box">
-                    <span className="search-icon">🔍</span>
-                    <input 
-                        type="text" 
-                        className="search-input" 
-                        placeholder="ค้นหารายชื่อ หรือ รหัสพนักงาน..." 
-                        value={searchTerm} 
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                
-                {/* 2. ปุ่มกดขวามือ */}
-                <div className="toolbar-actions">
-                    <button 
-                      onClick={handlePrint}
-                      className="btn btn-print"
-                    >
-                      🖨️ Print Report
-                    </button>
-
-                    <button 
-                      onClick={confirmResetAll}
-                      className="btn btn-danger"
-                    >
-                      🗑️ Reset All
-                    </button>
-                </div>
+                {/* ...โค้ด Toolbar เดิม... */}
              </div>
 
              <div className="table-wrapper">
                 <table>
                   <thead>
                     <tr>
-                      <th className="sticky-col" style={{minWidth: '220px', textAlign:'left', paddingLeft:'15px'}}>
-                        พนักงาน ({filteredEmployees.length})
+                      <th className="sticky-col" style={{minWidth: '250px', width:'250px'}}>
+                        รายชื่อพนักงาน ({filteredEmployees.length})
                       </th>
+                      
                       {allCourses.map(c => (
-                        <th key={c.id} title={c.title} style={{textAlign:'center', minWidth: '90px'}}>
+                        <th key={c.id} title={c.title} style={{textAlign:'center', minWidth: '80px', maxWidth:'100px'}}>
                            <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'4px'}}>
-                              <span style={{fontSize:'1.2rem'}}>{c.icon}</span>
-                              <span style={{fontSize:'0.75rem', maxWidth:'100px', overflow:'hidden', textOverflow:'ellipsis', cursor:'help'}}>
-                                {c.title.length > 12 ? c.title.substring(0, 12) + '...' : c.title}
-                              </span>
+                              <span style={{fontSize:'1.5rem'}}>{c.icon || '📺'}</span>
+                              <span style={{fontSize:'0.75rem', color:'#64748b'}}>{c.id}</span>
                            </div>
                         </th>
                       ))}
-                      <th style={{textAlign:'center', minWidth:'60px'}}>Reset</th>
+                      
+                      <th style={{textAlign:'center', minWidth:'80px'}}>Action</th>
                     </tr>
                   </thead>
+                  
                   <tbody>
                     {isLoading ? (
-                        <tr><td colSpan={allCourses.length + 2} style={{padding:'3rem', textAlign:'center'}}>⏳ กำลังโหลด...</td></tr>
+                        <tr><td colSpan={allCourses.length + 2} style={{padding:'3rem', textAlign:'center'}}>⏳ กำลังโหลดข้อมูล...</td></tr>
                     ) : filteredEmployees.map(emp => (
                       <tr key={emp.id}>
-                        <td className="sticky-col" style={{textAlign:'left', paddingLeft:'15px'}}>
+                        <td className="sticky-col">
                            <div style={{fontWeight:'600', color:'#334155'}}>{emp.name}</div>
-                           <div style={{fontSize:'0.75rem', color:'#94a3b8'}}>{emp.id}</div>
-                           <div style={{fontSize:'0.7rem', color:'#cbd5e1'}}>ล่าสุด: {emp.lastSeen}</div>
+                           <div style={{fontSize:'0.75rem', color:'#94a3b8'}}>ID: {emp.id}</div>
+                           <div style={{fontSize:'0.7rem', color:'#cbd5e1'}}>
+                              {emp.lastSeen === '-' ? '' : `เข้าล่าสุด: ${emp.lastSeen}`}
+                           </div>
                         </td>
+
                         {allCourses.map(c => {
                             const p = emp.progress?.[c.id];
+                            
+                            // 🔥 ฟังก์ชันแปลงวันที่ให้เป็นภาษาไทยสั้นๆ (เช่น 9 ม.ค. 69)
+                            const getThaiDate = (dateString) => {
+                                if (!dateString) return "";
+                                const date = new Date(dateString);
+                                return date.toLocaleDateString('th-TH', {
+                                    day: 'numeric', month: 'short', year: '2-digit',
+                                    hour: '2-digit', minute: '2-digit'
+                                });
+                            };
+
                             return (
-                                <td key={c.id} style={{textAlign:'center'}}>
+                                <td key={c.id}>
                                     <div className="status-cell">
-                                        {!p ? <div className="badge-dot badge-none" title="ยังไม่เริ่ม"></div> :
-                                         p.isCompleted ? <div style={{color:'#10b981', fontSize:'1.2rem'}} title="ผ่านแล้ว">✅</div> :
-                                         <div className="badge-dot badge-learning" title="เรียนอยู่"></div>}
+                                        {!p ? (
+                                           <div className="badge-dot badge-none" title={`วิชา ${c.id}: ยังไม่เริ่ม`}></div>
+                                        ) : p.isCompleted ? (
+                                           // ✅ จุดที่แก้: เพิ่มวันที่ใน Title
+                                           <div 
+                                              title={`✅ ผ่านแล้ว\n📅 เมื่อ: ${getThaiDate(p.lastUpdated)}`} 
+                                              style={{color:'#10b981', display:'flex', alignItems:'center', cursor:'help'}}
+                                           >
+                                              <span style={{fontSize:'1.2rem', fontWeight:'bold'}}>✓</span>
+                                           </div>
+                                        ) : (
+                                           <div className="badge-dot badge-learning" title={`🟡 กำลังเรียน (${Math.floor(p.lastWatched)} วินาที)\n📅 ล่าสุด: ${getThaiDate(p.lastUpdated)}`}></div>
+                                        )}
                                     </div>
                                 </td>
                             )
                         })}
-                        <td style={{textAlign:'center'}}>
-                           <button className="btn-reset" onClick={() => confirmReset(emp.id, emp.name)} title="รีเซ็ต">🔄</button>
+                        
+                        <td>
+                           <button className="btn-reset" onClick={() => confirmReset(emp.id, emp.name)} title="รีเซ็ตผลการเรียน">
+                             🔄
+                           </button>
                         </td>
                       </tr>
                     ))}

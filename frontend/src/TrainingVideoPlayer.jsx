@@ -3,11 +3,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactPlayer from 'react-player';
 
 const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
-  // --- STATE เดิม ---
+  // --- STATE ---
   const [playedSeconds, setPlayedSeconds] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [statusMsg, setStatusMsg] = useState('⏳ กำลังโหลดข้อมูล...');
+  
   const [playing, setPlaying] = useState(false);
   const [showResumeBtn, setShowResumeBtn] = useState(false); 
 
@@ -18,30 +19,26 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   // --- STATE: Native PiP (ลอยนอกเว็บ) ---
   const [isNativePiP, setIsNativePiP] = useState(false);
 
-  // Refs Drag & Drop
+  // Refs
   const dragRef = useRef(false);
   const resizeRef = useRef(false);
   const offsetRef = useRef({ x: 0, y: 0 });
   const startDimRef = useRef({ w: 0, h: 0 });
-
+  
   const playerRef = useRef(null);
   const lastSaveTime = useRef(0);
   const currentVideoUrl = useRef(videoUrl);
   const maxWatchedTime = useRef(0); 
   const savedTimeRef = useRef(0);
 
-  // 1. ตั้งค่าตำแหน่งเริ่มต้น (ขวาล่าง)
+  // 1. ตั้งค่าตำแหน่งเริ่มต้น (Custom Floating)
   useEffect(() => {
     if (isFloating) {
-      setFloatRect({
-        x: window.innerWidth - 500,
-        y: window.innerHeight - 350,
-        w: 480, h: 300
-      });
+      setFloatRect({ x: window.innerWidth - 500, y: window.innerHeight - 350, w: 480, h: 300 });
     }
   }, [isFloating]);
 
-  // 2. Mouse Event Listeners (สำหรับลาก)
+  // 2. Mouse Event Listeners (สำหรับลาก Custom Floating)
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (dragRef.current) {
@@ -121,6 +118,21 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   const handleStartNew = () => { setShowResumeBtn(false); savedTimeRef.current=0; maxWatchedTime.current=0; if(playerRef.current) playerRef.current.seekTo(0); setPlaying(true); };
   const handleEnded = () => { saveProgress(totalDuration,totalDuration); setStatusMsg('🎉 จบแล้ว!'); setPlaying(false); setIsFloating(false); setIsNativePiP(false); };
 
+  // --- 🔥 ฟังก์ชันเปิด Native PiP (แบบบังคับ) ---
+  const toggleNativePiP = () => {
+    // 1. ปิดโหมดลากในเว็บก่อน
+    setIsFloating(false);
+    
+    // 2. ถ้ายังไม่เล่น ให้เล่นก่อน (สำคัญมาก: PiP จะไม่ทำงานถ้า video pause อยู่)
+    if (!playing) {
+        setPlaying(true);
+        // รอแป๊บนึงให้วิดีโอเริ่มเล่น แล้วค่อยสั่ง PiP
+        setTimeout(() => setIsNativePiP(!isNativePiP), 500);
+    } else {
+        setIsNativePiP(!isNativePiP);
+    }
+  };
+
   // --- STYLES ---
   const containerStyle = isFloating ? {
     position: 'fixed', left: `${floatRect.x}px`, top: `${floatRect.y}px`, width: `${floatRect.w}px`, height: `${floatRect.h}px`,
@@ -144,7 +156,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
         </div>
         
         <div style={{display:'flex', gap:'10px'}}>
-            {/* ปุ่ม 1: จอลอยในเว็บ (ลากได้) */}
+            {/* ปุ่ม 1: จอลอยในเว็บ */}
             <button 
               onClick={() => { setIsFloating(!isFloating); setIsNativePiP(false); }}
               style={{
@@ -156,9 +168,9 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
               {isFloating ? '❌ ปิดจอลอย' : '📺 จอลอย (ในเว็บ)'}
             </button>
 
-            {/* ปุ่ม 2: จอลอยนอกเว็บ (Native PiP) */}
+            {/* ปุ่ม 2: จอลอยนอกเว็บ */}
             <button 
-              onClick={() => { setIsNativePiP(!isNativePiP); setIsFloating(false); }}
+              onClick={toggleNativePiP}
               style={{
                 background: isNativePiP ? '#ef4444' : '#4f46e5',
                 color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold'
@@ -203,7 +215,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
                     controls={true}
                     playing={playing} 
                     
-                    // ✅ เปิดใช้งาน Native PiP ตรงนี้
+                    // ✅ สั่ง Native PiP ผ่าน Prop
                     pip={isNativePiP}
                     onEnablePIP={() => setIsNativePiP(true)}
                     onDisablePIP={() => setIsNativePiP(false)}
@@ -212,7 +224,11 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
                     onProgress={handleProgress}
                     onEnded={handleEnded}
                     onReady={() => setIsReady(true)}
-                    config={{ youtube: { playerVars: { showinfo: 0, modestbranding: 1, rel: 0, playsinline: 1 } } }}
+                    // 🔥 Config สำคัญ: อนุญาต PiP ใน iframe และเล่นในเว็บ
+                    config={{ 
+                        youtube: { playerVars: { showinfo: 0, modestbranding: 1, rel: 0, playsinline: 1 } },
+                        file: { attributes: { controlsList: 'nodownload', disablePictureInPicture: false } } // บังคับเปิด PiP
+                    }}
                 />
             </div>
         </div>
@@ -224,11 +240,16 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
         )}
       </div>
       
-      {(isFloating || isNativePiP) && (
-          <div style={{width: '100%', paddingTop: '56.25%', background: '#f1f5f9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #cbd5e1'}}>
-              <span style={{color:'#64748b'}}>📺 วิดีโอกำลังเล่นในโหมดจอลอย...</span>
-          </div>
-      )}
+      {/* ℹ️ คำแนะนำเมื่อกดแล้วจอยังไม่มา (เพราะ YouTube บล็อก) */}
+      <div style={{marginTop:'10px', fontSize:'0.85rem', color:'#64748b'}}>
+          💡 <b>เคล็ดลับ:</b> ถ้ากด "จอลอย (นอกเว็บ)" แล้ววิดีโอไม่เด้งออกมา ให้ทำดังนี้:
+          <ol style={{margin:'5px 0 0 20px', padding:0}}>
+              <li>กด <b>Play</b> วิดีโอก่อน</li>
+              <li>เอาเมาส์ชี้ที่วิดีโอแล้ว <b>คลิกขวา 1 ครั้ง</b> (จะเห็นเมนูสีดำ)</li>
+              <li>ขยับเมาส์นิดนึง แล้ว <b>คลิกขวาซ้ำอีก 1 ครั้ง</b> (จะเห็นเมนูสีขาว)</li>
+              <li>เลือกเมนู <b>"Picture in picture" (ภาพในภาพ)</b></li>
+          </ol>
+      </div>
 
     </div>
   );

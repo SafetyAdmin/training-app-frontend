@@ -85,13 +85,7 @@ body {
 }
 
 .profile-circle {
-  width: 36px; height: 36px;
-  background-color: var(--primary-light);
-  color: var(--primary);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: bold;
-  font-size: 0.9rem;
+  display: none;
 }
 
 /* =========================================

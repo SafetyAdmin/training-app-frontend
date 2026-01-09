@@ -12,11 +12,11 @@ function App() {
   const [myProgress, setMyProgress] = useState([]);    
   const [activeCategory, setActiveCategory] = useState('All');
   
-  // ✅ เปลี่ยน: สร้าง State สำหรับเก็บรายชื่อคอร์ส (เริ่มเป็นค่าว่าง)
+  // ✅ สร้าง State สำหรับเก็บรายชื่อคอร์ส
   const [courses, setCourses] = useState([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
 
-  // ✅ EFFECT 1: ดึงรายชื่อคอร์สจาก Server (ทำงานเมื่อเข้าเว็บครั้งแรก)
+  // ✅ EFFECT 1: ดึงรายชื่อคอร์สจาก Server
   useEffect(() => {
     fetch('https://training-api-pvak.onrender.com/api/courses')
       .then(res => res.json())
@@ -44,10 +44,16 @@ function App() {
     }
   }, [user, activeTab]);
 
-  // คำนวณหมวดหมู่ (Categories) จากข้อมูลจริงที่ได้จาก DB
+  // 🔥 ฟังก์ชันเปลี่ยน Tab (แก้ปัญหา: กดแล้วไม่เปลี่ยนหน้า)
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    setSelectedCourse(null); // 🟢 สำคัญมาก! สั่งปิดวิดีโอทันที
+  };
+
+  // คำนวณหมวดหมู่
   const categories = useMemo(() => [...new Set(courses.map(c => c.category))], [courses]);
 
-  // จัดกลุ่มคอร์สตามหมวดหมู่
+  // จัดกลุ่มคอร์ส
   const groupedCourses = useMemo(() => {
     const groups = {};
     courses.forEach(course => {
@@ -59,7 +65,7 @@ function App() {
     return groups;
   }, [courses, activeCategory]);
 
-  // กรองคอร์สสำหรับหน้า My Learning
+  // กรองคอร์สสำหรับ My Learning
   const myLearningCourses = useMemo(() => {
     if (activeTab !== 'MyLearning') return [];
     return courses.filter(course => {
@@ -73,23 +79,32 @@ function App() {
 
   // --- Render Section ---
 
-  // 1. ถ้ายังไม่ Login
   if (!user) return <Login onLogin={(u) => setUser(u)} />;
-
-  // 2. ถ้าเป็น Admin
   if (user.role === 'admin') return <Dashboard onLogout={() => setUser(null)} />;
 
-  // 3. ถ้าเป็นพนักงาน (หน้าเรียน)
   return (
     <div>
       <nav className="navbar">
         <div className="nav-left">
           <div className="brand-logo">🏭 SEC Learning Center</div>
+          
+          {/* ✅ เมนูเปลี่ยนหน้า (เรียกใช้ handleTabChange) */}
           <div className="nav-menu">
-            <span onClick={() => setActiveTab('Class')} style={activeTab === 'Class' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}>Class</span>
-            <span onClick={() => setActiveTab('MyLearning')} style={activeTab === 'MyLearning' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}>My Learning</span>
+            <span 
+                onClick={() => handleTabChange('Class')} 
+                style={activeTab === 'Class' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}
+            >
+                Class
+            </span>
+            <span 
+                onClick={() => handleTabChange('MyLearning')} 
+                style={activeTab === 'MyLearning' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}
+            >
+                My Learning
+            </span>
           </div>
         </div>
+        
         <div className="nav-right">
           <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2', marginRight: '8px'}}>
             <span style={{fontWeight: '600', color: '#374151', fontSize: '0.95rem'}}>{user.name}</span>
@@ -114,14 +129,12 @@ function App() {
             {/* --- TAB: CLASS --- */}
             {activeTab === 'Class' && (
               <>
-                {/* Loading State */}
                 {isLoadingCourses && (
                     <div style={{textAlign:'center', padding:'2rem', color:'#6b7280'}}>
                         ⏳ กำลังโหลดรายชื่อวิชาจากระบบ...
                     </div>
                 )}
 
-                {/* Categories Scroll */}
                 {!isLoadingCourses && (
                     <div className="category-filter-scroll">
                     <div className={`filter-card ${activeCategory === 'All' ? 'active' : ''}`} onClick={() => setActiveCategory('All')} style={{background: '#02d6fcff'}}>
@@ -135,7 +148,6 @@ function App() {
                     </div>
                 )}
 
-                {/* Course Groups */}
                 {!isLoadingCourses && courses.length === 0 && (
                     <div style={{textAlign:'center', marginTop:'2rem'}}>🚫 ไม่พบวิชาในระบบ (กรุณาแจ้ง Admin)</div>
                 )}
@@ -171,24 +183,24 @@ function App() {
                   <div style={{textAlign:'center', padding:'4rem', color:'#94a3b8'}}>
                     <div style={{fontSize:'3rem', marginBottom:'1rem'}}>📭</div>
                     <p>คุณยังไม่ได้เริ่มเรียนวิชาใดเลย</p>
-                    <button onClick={() => setActiveTab('Class')} className="btn-start-course" style={{maxWidth:'200px', margin:'1rem auto', padding:'10px', background:'#4f46e5', color:'white', border:'none', borderRadius:'6px', cursor:'pointer'}}>ไปที่หน้าคอร์สเรียน</button>
+                    <button onClick={() => handleTabChange('Class')} className="btn-start-course" style={{maxWidth:'200px', margin:'1rem auto', padding:'10px', background:'#4f46e5', color:'white', border:'none', borderRadius:'6px', cursor:'pointer'}}>ไปที่หน้าคอร์สเรียน</button>
                   </div>
                 ) : (
                   <div className="groups-grid">
                       <div className="group-card" style={{gridColumn:'1 / -1'}}>
-                         <div className="group-header"><span>หลักสูตรที่คุณเรียนไปแล้ว</span></div>
-                         {myLearningCourses.map(course => (
-                           <div key={course.id} className="course-list-item" onClick={() => setSelectedCourse(course)}>
-                             <div className="course-thumb" style={{background:'#f3f4f6', color:'#6b7280'}}>{course.icon}</div>
-                             <div className="course-info" style={{flex:1}}>
-                               <div className="course-title">{course.title}</div>
-                               <div className="course-meta">
-                                 {course.isCompleted ? <span className="status-badge status-completed">✅ ผ่านแล้ว</span> : <span className="status-badge status-pending">🟡 กำลังเรียน ({Math.floor(course.lastWatched)} วินาที)</span>}
-                               </div>
-                             </div>
-                             <div style={{display:'flex', alignItems:'center'}}><button className="icon-btn">▶</button></div>
-                           </div>
-                         ))}
+                          <div className="group-header"><span>หลักสูตรที่คุณเรียนไปแล้ว</span></div>
+                          {myLearningCourses.map(course => (
+                            <div key={course.id} className="course-list-item" onClick={() => setSelectedCourse(course)}>
+                              <div className="course-thumb" style={{background:'#f3f4f6', color:'#6b7280'}}>{course.icon}</div>
+                              <div className="course-info" style={{flex:1}}>
+                                <div className="course-title">{course.title}</div>
+                                <div className="course-meta">
+                                  {course.isCompleted ? <span className="status-badge status-completed">✅ ผ่านแล้ว</span> : <span className="status-badge status-pending">🟡 กำลังเรียน ({Math.floor(course.lastWatched)} วินาที)</span>}
+                                </div>
+                              </div>
+                              <div style={{display:'flex', alignItems:'center'}}><button className="icon-btn">▶</button></div>
+                            </div>
+                          ))}
                       </div>
                   </div>
                 )}

@@ -251,13 +251,33 @@ const Dashboard = ({ onLogout }) => {
         {activeTab === 'report' && (
           <>
              <div className="toolbar">
+                {/* 1. กล่องค้นหา */}
                 <div className="search-box">
                     <span className="search-icon">🔍</span>
-                    <input type="text" className="search-input" placeholder="ค้นหา..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    <input 
+                        type="text" 
+                        className="search-input" 
+                        placeholder="ค้นหารายชื่อ หรือ รหัสพนักงาน..." 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
+                
+                {/* 2. ปุ่มกดขวามือ */}
                 <div className="toolbar-actions">
-                    <button onClick={handlePrint} className="btn" style={{background:'#3b82f6', color:'white'}}>🖨️ Print</button>
-                    <button onClick={confirmResetAll} className="btn" style={{background:'#ef4444', color:'white'}}>🗑️ Reset All</button>
+                    <button 
+                      onClick={handlePrint}
+                      className="btn btn-print"
+                    >
+                      🖨️ Print Report
+                    </button>
+
+                    <button 
+                      onClick={confirmResetAll}
+                      className="btn btn-danger"
+                    >
+                      🗑️ Reset All
+                    </button>
                 </div>
              </div>
 

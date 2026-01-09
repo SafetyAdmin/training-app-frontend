@@ -1,3 +1,4 @@
+// src/TrainingVideoPlayer.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import ReactPlayer from 'react-player';
 
@@ -7,12 +8,12 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   const [isReady, setIsReady] = useState(false);
   const [statusMsg, setStatusMsg] = useState('⏳ กำลังโหลดข้อมูล...');
   
-  // State เดิม
+  // Player Controls
   const [playing, setPlaying] = useState(false);
   const [showResumeBtn, setShowResumeBtn] = useState(false); 
 
-  // ✅ NEW: เพิ่ม State สำหรับโหมด Popup (PiP)
-  const [pipMode, setPipMode] = useState(false);
+  // ✅ PIP Mode (ใช้ State คุม Style)
+  const [isFloating, setIsFloating] = useState(false);
 
   const playerRef = useRef(null);
   const lastSaveTime = useRef(0);
@@ -20,7 +21,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   const maxWatchedTime = useRef(0); 
   const savedTimeRef = useRef(0);
 
-  // ... (ฟังก์ชัน saveProgress เดิม ไม่ต้องแก้) ...
+  // --- 1. Save Progress ---
   const saveProgress = async (currentTime, duration) => {
     if (!currentTime || currentTime < 1 || duration === 0) return;
     try {
@@ -32,20 +33,20 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
     } catch (error) { console.error("Save failed", error); }
   };
 
-  // ... (useEffect ทั้ง 2 ตัวเดิม ไม่ต้องแก้) ...
+  // --- 2. Initial Load ---
   useEffect(() => {
     if (currentVideoUrl.current !== videoUrl) {
       setPlaying(false); setTotalDuration(0); setPlayedSeconds(0);
       maxWatchedTime.current = 0; savedTimeRef.current = 0; lastSaveTime.current = 0;
-      setIsReady(false); setShowResumeBtn(false); setPipMode(false); // Reset PIP ด้วย
+      setIsReady(false); setShowResumeBtn(false); 
+      setIsFloating(false); // Reset Floating
       setStatusMsg('🔄 กำลังเปลี่ยนวิดีโอ...');
       currentVideoUrl.current = videoUrl;
     }
   }, [videoUrl]);
 
   useEffect(() => {
-    if (!videoUrl || !employeeId || !courseId) return;
-    // ... (Logic ดึงข้อมูลเดิมเหมือนเดิม) ...
+    if (!videoUrl || !employeeId) return;
     fetch(`https://training-api-pvak.onrender.com/api/get-progress?employeeId=${employeeId}&courseId=${courseId}`)
       .then(res => res.json())
       .then(data => {
@@ -59,15 +60,14 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
           setShowResumeBtn(true);
         } else {
           setStatusMsg('✅ เริ่มเรียนใหม่');
-          setShowResumeBtn(false);
           setPlaying(true);
         }
         setIsReady(true);
       })
-      .catch(() => setStatusMsg('⚠️ ดึงข้อมูลไม่ได้ (เริ่มใหม่)'));
+      .catch(() => setStatusMsg('⚠️ ดึงข้อมูลไม่ได้'));
   }, [employeeId, courseId, videoUrl]);
 
-  // ... (Functions handle ต่างๆ เหมือนเดิม) ...
+  // --- 3. Handlers ---
   const handleManualResume = () => {
     setShowResumeBtn(false);
     if (playerRef.current) playerRef.current.seekTo(savedTimeRef.current, 'seconds');
@@ -76,7 +76,7 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
 
   const handleStartNew = () => {
     setShowResumeBtn(false);
-    savedTimeRef.current = 0; maxWatchedTime.current = 0; lastSaveTime.current = 0;
+    savedTimeRef.current = 0; maxWatchedTime.current = 0;
     if (playerRef.current) playerRef.current.seekTo(0);
     setPlaying(true);
   };
@@ -84,7 +84,6 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
   const handleProgress = (state) => {
     if (showResumeBtn) return;
     const currentSec = state.playedSeconds;
-    
     if (currentSec > maxWatchedTime.current + 5) {
       if (playerRef.current) playerRef.current.seekTo(maxWatchedTime.current, 'seconds');
       setStatusMsg('🚫 ห้ามกดข้าม!');
@@ -99,70 +98,88 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
     }
   };
 
-  const handleEnded = () => {
-    saveProgress(totalDuration, totalDuration);
-    setStatusMsg('🎉 เรียนจบแล้ว!');
-    setPlaying(false);
-    // ออกจากโหมด PIP เมื่อจบ
-    if(document.pictureInPictureElement) document.exitPictureInPicture();
+  // ✅ Toggle Floating Mode (สลับโหมดจอลอย)
+  const toggleFloating = () => {
+    setIsFloating(!isFloating);
   };
 
-  // ✅ ฟังก์ชันสลับโหมด Popup
-  const togglePip = () => {
-    setPipMode(!pipMode);
+  // 🔥 Style สำหรับโหมดปกติ vs โหมดลอย
+  const containerStyle = isFloating ? {
+    position: 'fixed',
+    bottom: '20px',
+    right: '20px',
+    width: '400px',
+    height: '225px',
+    zIndex: 9999,
+    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    transition: 'all 0.3s ease-in-out',
+    border: '2px solid #4f46e5'
+  } : {
+    position: 'relative',
+    paddingTop: '56.25%', // 16:9 Aspect Ratio
+    background: '#000',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    transition: 'all 0.3s ease-in-out'
   };
 
   return (
     <div style={{ marginTop: '20px' }}>
       
-      {/* Header Status Bar & Controls */}
+      {/* Control Bar */}
       <div style={{ 
         background: '#f8fafc', padding: '15px', borderRadius: '12px', marginBottom: '15px', 
-        border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px'
+        border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
       }}>
-        <div style={{ fontSize: '14px', color: '#334155' }}>
-           ⏱️ <b>เวลา:</b> {Math.floor(playedSeconds)} / {Math.floor(totalDuration)} วิ 
-           &nbsp;|&nbsp; 
-           <span style={{color: statusMsg.includes('🚫') ? '#ef4444' : '#10b981', fontWeight: 'bold'}}>{statusMsg}</span>
+        <div style={{fontSize:'14px'}}>
+           ⏱️ {Math.floor(playedSeconds)} / {Math.floor(totalDuration)} วิ &nbsp;|&nbsp; 
+           <span style={{color: statusMsg.includes('🚫') ? 'red' : 'green', fontWeight:'bold'}}>{statusMsg}</span>
         </div>
-
-        {/* ✅ ปุ่มกด Popup */}
+        
+        {/* ปุ่มสลับโหมด */}
         <button 
-          onClick={togglePip}
+          onClick={toggleFloating}
           style={{
-            background: pipMode ? '#3b82f6' : 'white',
-            color: pipMode ? 'white' : '#3b82f6',
-            border: '1px solid #3b82f6',
-            padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold',
-            display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem'
+            background: isFloating ? '#ef4444' : '#4f46e5',
+            color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px',
+            cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px'
           }}
         >
-          {pipMode ? '⬇️ ดึงจอกลับ' : '📺 จอลอย (Popup)'}
+          {isFloating ? '❌ ปิดจอลอย' : '📺 เปิดจอลอย (Mini Player)'}
         </button>
       </div>
 
-      <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', marginBottom: '15px' }}>
-        <div style={{ 
-          width: `${totalDuration > 0 ? (playedSeconds / totalDuration) * 100 : 0}%`, 
-          height: '100%', 
-          background: playedSeconds >= totalDuration * 0.99 ? '#10b981' : '#4f46e5', 
-          transition: 'width 0.3s' 
-        }} />
-      </div>
-
-      <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+      {/* Video Container (เปลี่ยน Style ตาม State) */}
+      <div style={containerStyle}>
         
+        {/* ปุ่มปิดเฉพาะตอนลอย */}
+        {isFloating && (
+            <button 
+                onClick={() => setIsFloating(false)}
+                style={{
+                    position: 'absolute', top: '5px', right: '5px', zIndex: 100,
+                    background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none',
+                    borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer'
+                }}
+            >
+                ✕
+            </button>
+        )}
+
+        {/* Resume Overlay */}
         {showResumeBtn && (
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99,
             backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'
           }}>
-            <h3 style={{ color: 'white', marginBottom: '15px' }}>
-              ประวัติเดิม: {Math.floor(savedTimeRef.current / 60)}:{Math.floor(savedTimeRef.current % 60).toString().padStart(2, '0')}
+            <h3 style={{ color: 'white', marginBottom: '10px', fontSize: isFloating ? '1rem' : '1.5rem' }}>
+              ดูต่อจากเดิม?
             </h3>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={handleManualResume} style={{background:'#ef4444', color:'white', border:'none', padding:'10px 20px', borderRadius:'6px', cursor:'pointer', fontWeight:'bold'}}>▶ ดูต่อ</button>
-              <button onClick={handleStartNew} style={{background:'transparent', color:'#aaa', border:'1px solid #555', padding:'10px 20px', borderRadius:'6px', cursor:'pointer'}}>เริ่มใหม่</button>
+              <button onClick={handleManualResume} style={{background:'#22c55e', color:'white', border:'none', padding:'8px 16px', borderRadius:'4px', cursor:'pointer'}}>▶ ใช่</button>
+              <button onClick={handleStartNew} style={{background:'transparent', color:'#aaa', border:'1px solid #555', padding:'8px 16px', borderRadius:'4px', cursor:'pointer'}}>เริ่มใหม่</button>
             </div>
           </div>
         )}
@@ -175,27 +192,28 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
           style={{ position: 'absolute', top: 0, left: 0 }}
           controls={true}
           playing={playing} 
-          
-          // ✅ เปิดใช้งานโหมด PIP
-          pip={pipMode}
-          onEnablePIP={() => setPipMode(true)}
-          onDisablePIP={() => setPipMode(false)}
-
           onDuration={(d) => setTotalDuration(d)}
           onProgress={handleProgress}
-          onEnded={handleEnded}
+          onEnded={() => { saveProgress(totalDuration, totalDuration); setStatusMsg('🎉 จบแล้ว!'); setPlaying(false); setIsFloating(false); }}
           onReady={() => setIsReady(true)}
           config={{
-            youtube: { 
-              playerVars: { 
-                showinfo: 1, modestbranding: 1, rel: 0, 
-                fs: 1, // Fullscreen
-                playsinline: 1 // เล่นในเว็บได้ไม่เด้งออก (มือถือ)
-              } 
-            }
+            youtube: { playerVars: { showinfo: 1, modestbranding: 1, rel: 0, playsinline: 1 } }
           }}
         />
       </div>
+      
+      {/* Placeholder (พื้นที่ว่าง) เวลาจอลอยออกไป หน้าเว็บจะได้ไม่กระตุก */}
+      {isFloating && (
+          <div style={{
+              width: '100%', paddingTop: '56.25%', 
+              background: '#f1f5f9', borderRadius: '12px', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '2px dashed #cbd5e1'
+          }}>
+              <span style={{color:'#64748b'}}>📺 วิดีโอกำลังเล่นในโหมดจอลอย...</span>
+          </div>
+      )}
+
     </div>
   );
 };

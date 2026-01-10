@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-const Dashboard = ({ onLogout }) => {
+const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) => {
+
   // --- STATE ---
   const [employees, setEmployees] = useState([]);
-  const [allCourses, setAllCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('report'); 
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState(initialTab || 'summary');
+  const [allCourses, setAllCourses] = useState([]); // ต้องมี state นี้สำหรับเก็บคอร์ส
   
   // UI States
   const [notification, setNotification] = useState(null);
@@ -47,6 +48,51 @@ const Dashboard = ({ onLogout }) => {
             if (data.success) setAllCourses(data.data);
         })
         .catch(err => console.error("Course Error:", err));
+  };
+
+  // ✅ 1. เพิ่ม useEffect โหลดข้อมูลคอร์สทั้งหมด (ถ้ายังไม่มี)
+  useEffect(() => {
+    fetch('https://training-api-pvak.onrender.com/api/courses?role=admin') // ส่ง role admin เพื่อดึงมาทุกคอร์ส
+      .then(res => res.json())
+      .then(data => {
+        if(data.success) setAllCourses(data.data);
+      });
+  }, []);
+
+  // ✅ 2. ฟังก์ชันกดติ๊กเปลี่ยนสิทธิ์ (Toggle Role)
+  const toggleCourseRole = async (courseId, roleToToggle) => {
+    // 1. หาคอร์สเป้าหมาย
+    const course = allCourses.find(c => c.id === courseId);
+    if (!course) return;
+
+    // 2. คำนวณ Roles ใหม่
+    let newRoles = [...(course.allowedRoles || ['staff', 'contractor'])]; // Default เก่า
+    
+    if (newRoles.includes(roleToToggle)) {
+        // ถ้ามีอยู่แล้ว -> เอาออก (เช่น ติ๊กออก)
+        newRoles = newRoles.filter(r => r !== roleToToggle);
+    } else {
+        // ถ้ายังไม่มี -> ใส่เพิ่ม (เช่น ติ๊กถูก)
+        newRoles.push(roleToToggle);
+    }
+
+    // 3. อัปเดตหน้าจอทันที (Optimistic Update)
+    const updatedCourses = allCourses.map(c => 
+        c.id === courseId ? { ...c, allowedRoles: newRoles } : c
+    );
+    setAllCourses(updatedCourses);
+
+    // 4. ส่งไปบันทึกที่ Server
+    try {
+        await fetch('https://training-api-pvak.onrender.com/api/admin/update-course-roles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ courseId, allowedRoles: newRoles })
+        });
+    } catch (err) {
+        alert('บันทึกไม่สำเร็จ');
+        // (Optional) โหลดข้อมูลกลับคืนถ้าพัง
+    }
   };
 
   useEffect(() => {
@@ -283,7 +329,9 @@ const Dashboard = ({ onLogout }) => {
                       <tr key={emp.id}>
                         <td className="sticky-col">
                            <div style={{fontWeight:'600', color:'#334155'}}>{emp.name}</div>
-                           <div style={{fontSize:'0.75rem', color:'#94a3b8'}}>ID: {emp.id}</div>
+                           <div style={{fontSize:'0.75rem', color: emp.role === 'contractor' ? '#d97706' : '#94a3b8'}}>
+                              {emp.role === 'contractor' ? `ผู้รับเหมา: ${emp.company || '-'}` : `ID: {emp.id}`}
+                            </div>
                            <div style={{fontSize:'0.7rem', color:'#cbd5e1'}}>
                               {emp.lastSeen === '-' ? '' : `เข้าล่าสุด: ${emp.lastSeen}`}
                            </div>
@@ -377,34 +425,69 @@ const Dashboard = ({ onLogout }) => {
 
         {/* --- TAB 3: MANAGE COURSES --- */}
         {activeTab === 'courses' && (
-            <div className="manage-grid">
-                <div className="card" style={{ height:'fit-content' }}>
-                    <h3 style={{marginTop:0}}>➕ เพิ่มคอร์ส</h3>
-                    <form onSubmit={handleAddCourse}>
-                        {['id', 'title', 'category', 'url', 'duration'].map(field => (
-                            <div key={field} style={{marginBottom:'10px'}}>
-                                <input className="input-field" placeholder={field.toUpperCase()} value={newCourse[field]} onChange={e=>setNewCourse({...newCourse, [field]: e.target.value})} required={field!=='duration'} />
-                            </div>
-                        ))}
-                        <button className="btn btn-primary" style={{width:'100%'}}>บันทึก</button>
-                    </form>
-                </div>
-                <div className="card">
-                    <h3 style={{marginTop:0}}>🎬 รายการคอร์ส</h3>
-                    <div style={{maxHeight:'600px', overflowY:'auto'}}>
-                        {allCourses.map(c => (
-                            <div key={c.id} style={{borderBottom:'1px solid #eee', padding:'10px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                                <div>
-                                    <div style={{fontWeight:'bold'}}>{c.id}: {c.title}</div>
-                                    <div style={{fontSize:'0.8rem', color:'#666'}}>📂 {c.category}</div>
-                                </div>
-                                <button onClick={() => confirmDeleteCourse(c.id, c.title)} style={{background:'#fee2e2', color:'red', border:'none', borderRadius:'6px', padding:'4px 8px', cursor:'pointer'}}>ลบ</button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+         <div className="card">
+            <h3>🎬 จัดการหลักสูตรและการเข้าถึง</h3>
+            <div className="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th className="sticky-col">ชื่อวิชา</th>
+                            <th>หมวดหมู่</th>
+                            {/* เพิ่มหัวตารางสิทธิ์ */}
+                            <th style={{textAlign:'center', width:'100px'}}>Staff Only</th>
+                            <th style={{textAlign:'center', width:'100px'}}>Contractor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {allCourses.map(course => {
+                            // เช็คสิทธิ์ปัจจุบันของคอร์สนี้
+                            const roles = course.allowedRoles || ['staff', 'contractor'];
+                            const isStaff = roles.includes('staff');
+                            const isContractor = roles.includes('contractor');
+
+                            return (
+                                <tr key={course.id}>
+                                    <td className="sticky-col">
+                                        <div style={{fontWeight:'bold'}}>{course.title}</div>
+                                        <div style={{fontSize:'0.8rem', color:'#64748b'}}>{course.id}</div>
+                                    </td>
+                                    <td>{course.category}</td>
+                                    
+                                    {/* Checkbox สำหรับ Staff */}
+                                    <td style={{textAlign:'center'}}>
+                                        <label className="switch">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={isStaff} 
+                                                onChange={() => toggleCourseRole(course.id, 'staff')}
+                                            />
+                                            <span style={{cursor:'pointer', fontSize:'1.2rem'}}>
+                                                {isStaff ? '✅' : '❌'}
+                                            </span>
+                                        </label>
+                                    </td>
+
+                                    {/* Checkbox สำหรับ Contractor */}
+                                    <td style={{textAlign:'center'}}>
+                                        <label className="switch">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={isContractor} 
+                                                onChange={() => toggleCourseRole(course.id, 'contractor')}
+                                            />
+                                            <span style={{cursor:'pointer', fontSize:'1.2rem'}}>
+                                                {isContractor ? '✅' : '❌'}
+                                            </span>
+                                        </label>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
             </div>
-        )}
+         </div>
+      )}
       </div>
     </div>
   );

@@ -508,18 +508,31 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
                         </tr>
                       </thead>
                       <tbody>
-                            {allCourses.map(course => (
-                              <tr key={course.id}>
-                                    <td>{course.title}</td>
-                                    <td>{course.category}</td>
-                                    <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('staff')} readOnly /></td>
-                                    <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('contractor')} readOnly /></td>
-                                    <td style={{textAlign:'center'}}>
-                                        <button onClick={() => startEditCourse(course)} style={{background:'#f3f4f6', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>✏️</button>
-                                        <button onClick={() => confirmDeleteCourse(course.id, course.title)} style={{background:'#fee2e2', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>🗑️</button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                            {allCourses.map(course => {
+                               const roles = course.allowedRoles || ['staff', 'contractor'];
+                               return (
+                                   <tr key={course.id} style={{background: isEditing && newCourse.id === course.id ? '#fff7ed' : 'white'}}>
+                                       <td className="sticky-col">
+                                           <div style={{fontWeight:'bold', fontSize:'0.9rem'}}>{course.title}</div>
+                                           <div style={{fontSize:'0.75rem', color:'#64748b'}}>
+                                               {course.id} {course.questions?.length > 0 && <span style={{color:'#e11d48', marginLeft:'5px'}}>({course.questions.length} ข้อ)</span>}
+                                           </div>
+                                       </td>
+                                       <td>{course.category}</td>
+                                       <td style={{textAlign:'center'}}><input type="checkbox" checked={roles.includes('staff')} onChange={() => toggleCourseRole(course.id, 'staff')} /></td>
+                                       <td style={{textAlign:'center'}}><input type="checkbox" checked={roles.includes('contractor')} onChange={() => toggleCourseRole(course.id, 'contractor')} /></td>
+                                       
+                                       <td style={{textAlign:'center'}}>
+                                           <div style={{display:'flex', gap:'5px', justifyContent:'center'}}>
+                                               {/* ปุ่ม Edit */}
+                                               <button onClick={() => startEditCourse(course)} style={{background:'#f3f4f6', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>✏️</button>
+                                               {/* ปุ่ม Delete */}
+                                               <button onClick={() => confirmDeleteCourse(course.id, course.title)} style={{background:'#fee2e2', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>🗑️</button>
+                                           </div>
+                                       </td>
+                                   </tr>
+                               );
+                           })}
                                 </tbody>
                             </table>
                         </div>

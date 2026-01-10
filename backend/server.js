@@ -45,12 +45,14 @@ const Employee = mongoose.model('Employee', employeeSchema);
 
 // Model 3: คอร์สเรียน (Course) - ใหม่!
 const courseSchema = new mongoose.Schema({
-  id: { type: String, unique: true }, // เช่น SF001
-  title: String,    // ชื่อวิชา
-  category: String, // หมวดหมู่
-  icon: String,     // ไอคอน
-  url: String,      // ลิงก์ YouTube
-  duration: String  // ความยาว (Text)
+  id: { type: String, unique: true },
+  title: String,
+  category: String,
+  icon: String,
+  url: String,
+  duration: String,
+  // 🔥 [เพิ่ม] ใครมีสิทธิ์ดูบ้าง (ค่าเริ่มต้นคือดูได้ทั้งคู่)
+  allowedRoles: { type: [String], default: ['staff', 'contractor'] } 
 });
 const Course = mongoose.model('Course', courseSchema);
 
@@ -59,16 +61,38 @@ const Course = mongoose.model('Course', courseSchema);
 // Login
 app.post('/api/login', async (req, res) => {
   const { employeeId } = req.body;
+
   try {
-    const emp = await Employee.findOne({ employeeId });
-    if (emp) {
-        // เช็คว่าเป็นพนักงานจริงไหม (กันผู้รับเหมามาเนียนเข้าช่องนี้)
-        // หรือจะปล่อยให้เข้าได้หมดก็ได้ แล้วแต่ Design
-        res.json({ success: true, name: emp.name, employeeId: emp.employeeId, role: emp.role, company: emp.company });
-    } else {
-        res.json({ success: false, message: 'ไม่พบรหัสพนักงานในระบบ' });
+    // 🔥 1. เช็คดักจับ Admin (Hardcode)
+    // ตรงนี้คือรหัสผ่านสำหรับ Admin (สมมติให้พิมพ์แค่ admin)
+    if (employeeId === 'admin' || employeeId === '1234') { 
+        return res.json({ 
+            success: true, 
+            name: 'Administrator', 
+            employeeId: 'admin', 
+            role: 'admin',  // สำคัญ! ต้องส่ง role: 'admin' กลับไป
+            company: 'System' 
+        });
     }
-  } catch (err) { res.status(500).json({ success: false }); }
+
+    // 🔥 2. ถ้าไม่ใช่ Admin ให้ไปค้นใน Database (สำหรับพนักงาน/ผู้รับเหมา)
+    const emp = await Employee.findOne({ employeeId });
+    
+    if (emp) {
+        res.json({ 
+            success: true, 
+            name: emp.name, 
+            employeeId: emp.employeeId, 
+            role: emp.role || 'staff', // ถ้าไม่มี role ให้เป็น staff
+            company: emp.company || '-' 
+        });
+    } else {
+        res.json({ success: false, message: 'ไม่พบรหัสพนักงาน/ผู้ใช้งานในระบบ' });
+    }
+
+  } catch (err) { 
+      res.status(500).json({ success: false, message: err.message }); 
+  }
 });
 
 // 🔥 [ใหม่] API ลงทะเบียน/เข้าใช้งาน สำหรับผู้รับเหมา
@@ -103,8 +127,17 @@ app.post('/api/contractor-login', async (req, res) => {
 // ดึงรายชื่อคอร์สทั้งหมด (ใหม่!)
 app.get('/api/courses', async (req, res) => {
   try {
-    // เรียงตามหมวดหมู่ก่อน แล้วค่อยเรียงตามรหัส
-    const courses = await Course.find().sort({ category: 1, id: 1 });
+    const { role } = req.query; // รับค่า role ที่ส่งมาจากหน้าบ้าน (เช่น ?role=contractor)
+    
+    let filter = {};
+    
+    // ถ้ามี role ส่งมา และไม่ใช่ admin (admin เห็นหมด)
+    if (role && role !== 'admin') {
+        // ค้นหาคอร์สที่มี role นี้อยู่ในลิสต์ allowedRoles
+        filter = { allowedRoles: role };
+    }
+
+    const courses = await Course.find(filter).sort({ category: 1, id: 1 });
     res.json({ success: true, data: courses });
   } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
@@ -236,11 +269,13 @@ app.delete('/api/admin/delete-employee/:employeeId', async (req, res) => {
 // เพิ่มคอร์ส
 app.post('/api/admin/add-course', async (req, res) => {
   try {
-    const { id, title, category, icon, url, duration } = req.body;
-    const existing = await Course.findOne({ id });
-    if (existing) return res.status(400).json({ success: false, message: 'รหัสวิชาซ้ำ' });
+    // รับ allowedRoles มาด้วย (ส่งเป็น Array)
+    const { id, title, category, icon, url, duration, allowedRoles } = req.body;
+    
+    // ถ้าไม่ได้ส่งมา ให้ Default เป็นดูได้ทุกคน
+    const roles = allowedRoles || ['staff', 'contractor'];
 
-    await new Course({ id, title, category, icon, url, duration }).save();
+    await new Course({ id, title, category, icon, url, duration, allowedRoles: roles }).save();
     res.json({ success: true });
   } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });

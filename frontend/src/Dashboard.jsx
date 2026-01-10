@@ -418,73 +418,73 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
 
         {/* --- TAB 3: MANAGE COURSES --- */}
         {activeTab === 'courses' && (
-          <div className="manage-grid">
+        <div className="manage-grid">
+          
+          {/* --- ส่วนที่ 1: ฟอร์ม (ใส่ใน sticky-form-card) --- */}
+          <div className="sticky-form-card">
+            <h3 style={{color: isEditing ? '#f59e0b' : '#333', marginTop: 0}}>
+              {isEditing ? `✏️ แก้ไขวิชา: ${newCourse.id}` : '➕ เพิ่มหลักสูตรใหม่'}
+            </h3>
             
-            {/* --- ส่วนที่ 1: ฟอร์ม (ใส่ใน sticky-form-card) --- */}
-            <div className="sticky-form-card">
-              <h3 style={{color: isEditing ? '#f59e0b' : '#333', marginTop: 0}}>
-                {isEditing ? `✏️ แก้ไขวิชา: ${newCourse.id}` : '➕ เพิ่มหลักสูตรใหม่'}
-              </h3>
-              
-              <form onSubmit={handleSaveCourse}>
-                {/* ... เนื้อหาฟอร์มของคุณ (เหมือนเดิม) ... */}
-                {/* หมายเหตุ: ภายในฟอร์มที่เป็น grid 1fr 1fr ควรเปลี่ยนเป็น flex-wrap ด้วยถ้ายังเบียดกัน */}
-                <div style={{display:'flex', flexWrap: 'wrap', gap:'10px'}}>
-                  <div style={{flex: '1 1 150px'}}>
-                    <label>รหัสวิชา</label>
-                    <input className="input-field" value={newCourse.id} onChange={e => setNewCourse({...newCourse, id: e.target.value})} required disabled={isEditing} />
-                  </div>
-                  <div style={{flex: '1 1 150px'}}>
-                    <label>หมวดหมู่</label>
-                    <input className="input-field" value={newCourse.category} onChange={e => setNewCourse({...newCourse, category: e.target.value})} required />
-                  </div>
+            <form onSubmit={handleSaveCourse}>
+              {/* ... เนื้อหาฟอร์มของคุณ (เหมือนเดิม) ... */}
+              {/* หมายเหตุ: ภายในฟอร์มที่เป็น grid 1fr 1fr ควรเปลี่ยนเป็น flex-wrap ด้วยถ้ายังเบียดกัน */}
+              <div style={{display:'flex', flexWrap: 'wrap', gap:'10px'}}>
+                <div style={{flex: '1 1 150px'}}>
+                  <label>รหัสวิชา</label>
+                  <input className="input-field" value={newCourse.id} onChange={e => setNewCourse({...newCourse, id: e.target.value})} required disabled={isEditing} />
                 </div>
-                
-                {/* ... (ปุ่มและ Quiz Builder อื่นๆ เหมือนเดิม) ... */}
-                <div style={{marginTop: '20px'}}>
-                    <button type="submit" className="btn btn-primary" style={{width: '100%', background: isEditing ? '#f59e0b' : '#4f46e5'}}>
-                        {isEditing ? '💾 บันทึกการแก้ไข' : '💾 บันทึกคอร์สเรียน'}
-                    </button>
-                </div>
-              </form>
-            </div>
-
-            {/* --- ส่วนที่ 2: ตาราง (ใส่ใน table-card-container) --- */}
-            <div className="table-card-container">
-              <div className="card" style={{margin: 0}}>
-                <h3>🎬 รายชื่อวิชาทั้งหมด</h3>
-                <div className="table-wrapper">
-                  <table style={{width: '100%', minWidth: '600px'}}> {/* กำหนด minWidth ตารางเพื่อกันตัวอักษรซ้อนกัน */}
-                    <thead>
-                      <tr>
-                        <th>ชื่อวิชา</th>
-                        <th>หมวดหมู่</th>
-                        <th style={{textAlign:'center'}}>Staff</th>
-                        <th style={{textAlign:'center'}}>Sub</th>
-                        <th style={{textAlign:'center'}}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {allCourses.map(course => (
-                        <tr key={course.id}>
-                          {/* ... เนื้อหาแถวตารางเหมือนเดิม ... */}
-                          <td>{course.title}</td>
-                          <td>{course.category}</td>
-                          <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('staff')} readOnly /></td>
-                          <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('contractor')} readOnly /></td>
-                          <td style={{textAlign:'center'}}>
-                              <button onClick={() => startEditCourse(course)}>✏️</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div style={{flex: '1 1 150px'}}>
+                  <label>หมวดหมู่</label>
+                  <input className="input-field" value={newCourse.category} onChange={e => setNewCourse({...newCourse, category: e.target.value})} required />
                 </div>
               </div>
-            </div>
-
+              
+              {/* ... (ปุ่มและ Quiz Builder อื่นๆ เหมือนเดิม) ... */}
+              <div style={{marginTop: '20px'}}>
+                  <button type="submit" className="btn btn-primary" style={{width: '100%', background: isEditing ? '#f59e0b' : '#4f46e5'}}>
+                      {isEditing ? '💾 บันทึกการแก้ไข' : '💾 บันทึกคอร์สเรียน'}
+                  </button>
+              </div>
+            </form>
           </div>
-        )}
+
+          {/* --- ส่วนที่ 2: ตาราง (ใส่ใน table-card-container) --- */}
+          <div className="table-card-container">
+            <div className="card" style={{margin: 0}}>
+              <h3>🎬 รายชื่อวิชาทั้งหมด</h3>
+              <div className="table-wrapper">
+                <table style={{width: '100%', minWidth: '600px'}}> {/* กำหนด minWidth ตารางเพื่อกันตัวอักษรซ้อนกัน */}
+                  <thead>
+                    <tr>
+                      <th>ชื่อวิชา</th>
+                      <th>หมวดหมู่</th>
+                      <th style={{textAlign:'center'}}>Staff</th>
+                      <th style={{textAlign:'center'}}>Sub</th>
+                      <th style={{textAlign:'center'}}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allCourses.map(course => (
+                      <tr key={course.id}>
+                        {/* ... เนื้อหาแถวตารางเหมือนเดิม ... */}
+                        <td>{course.title}</td>
+                        <td>{course.category}</td>
+                        <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('staff')} readOnly /></td>
+                        <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('contractor')} readOnly /></td>
+                        <td style={{textAlign:'center'}}>
+                            <button onClick={() => startEditCourse(course)}>✏️</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      )}
 
       </div>
     </div>

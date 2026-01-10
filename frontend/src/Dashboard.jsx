@@ -508,23 +508,23 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
                         </tr>
                       </thead>
                       <tbody>
-                        {allCourses.map(course => (
-                          <tr key={course.id}>
-                            {/* ... เนื้อหาแถวตารางเหมือนเดิม ... */}
-                            <td>{course.title}</td>
-                            <td>{course.category}</td>
-                            <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('staff')} readOnly /></td>
-                            <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('contractor')} readOnly /></td>
-                            <td style={{textAlign:'center'}}>
-                                <button onClick={() => startEditCourse(course)}>✏️</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+                            {allCourses.map(course => (
+                              <tr key={course.id}>
+                                    <td>{course.title}</td>
+                                    <td>{course.category}</td>
+                                    <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('staff')} readOnly /></td>
+                                    <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('contractor')} readOnly /></td>
+                                    <td style={{textAlign:'center'}}>
+                                        <button onClick={() => startEditCourse(course)}>✏️</button>
+                                                <button onClick={() => confirmDeleteCourse(course.id, course.title)} style={{background:'#fee2e2', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>🗑️</button>
+                                            </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            </div>
             </div>
           )}
 

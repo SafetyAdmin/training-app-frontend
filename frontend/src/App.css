@@ -312,3 +312,45 @@ tbody td.sticky-col { text-align: left; padding-left: 16px; color: var(--slate-7
   .sticky-col { min-width: 120px !important; max-width: 120px; font-size: 0.8rem; }
   tbody td.sticky-col { padding-left: 8px; }
 }
+
+/* --- src/App.css --- */
+
+/* จัด Layout ของหน้าจัดการคอร์ส */
+.manage-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* ค่าเริ่มต้น: เรียงแนวตั้ง (สำหรับจอมือถือ/จอเล็ก) */
+  gap: 20px;
+  align-items: start;
+}
+
+/* ถ้าหน้าจอกว้างกว่า 1024px (iPad Pro / Laptop / Desktop) ให้แบ่ง 2 คอลัมน์ */
+@media (min-width: 1024px) {
+  .manage-grid {
+    /* ฝั่งซ้าย (ฟอร์ม) กว้าง 400px, ฝั่งขวา (ตาราง) กินพื้นที่ที่เหลือ */
+    grid-template-columns: 400px 1fr; 
+  }
+}
+
+/* ทำให้ Card ฟอร์มลอยตามเวลาเลื่อนหน้าจอ (Sticky) */
+.sticky-form-card {
+  height: fit-content;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  /* Sticky Logic */
+  position: sticky;
+  top: 20px; 
+  z-index: 10;
+  max-height: 90vh; /* กันฟอร์มยาวทะลุจอ */
+  overflow-y: auto; /* ถ้าฟอร์มยาวเกิน ให้มี Scrollbar ในตัว */
+}
+
+/* ปรับตารางให้เลื่อนซ้ายขวาได้ ถ้าข้อมูลล้น (ไม่ให้ดัน Layout แตก) */
+.table-wrapper {
+  overflow-x: auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  width: 100%;
+}

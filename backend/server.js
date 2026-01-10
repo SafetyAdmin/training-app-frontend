@@ -61,6 +61,28 @@ const courseSchema = new mongoose.Schema({
 });
 const Course = mongoose.model('Course', courseSchema);
 
+// 🔥 [ใหม่] API แก้ไขข้อมูลคอร์ส (รวมถึงข้อสอบ)
+app.post('/api/admin/edit-course', async (req, res) => {
+  const { id, title, category, icon, url, duration, questions } = req.body;
+  
+  try {
+    // หา Course ด้วย ID แล้วแก้ข้อมูลใหม่ทับลงไป
+    const updatedCourse = await Course.findOneAndUpdate(
+      { id: id }, 
+      { title, category, icon, url, duration, questions },
+      { new: true } // ให้คืนค่าข้อมูลใหม่กลับมา
+    );
+
+    if (updatedCourse) {
+        res.json({ success: true, message: 'แก้ไขเรียบร้อย' });
+    } else {
+        res.json({ success: false, message: 'ไม่พบรหัสวิชานี้' });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 2. เพิ่ม API สำหรับตรวจข้อสอบ (Submit Quiz)
 app.post('/api/submit-quiz', async (req, res) => {
     const { employeeId, employeeName, courseId, answers } = req.body;

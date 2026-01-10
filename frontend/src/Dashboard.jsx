@@ -278,27 +278,84 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
                     </tr>
                   </thead>
                   <tbody>
-                    {isLoading ? <tr><td colSpan="100%" style={{padding:'2rem', textAlign:'center'}}>⏳ Loading...</td></tr> : filteredEmployees.map(emp => (
+                    {isLoading ? (
+                        <tr><td colSpan={allCourses.length + 2} style={{padding:'3rem', textAlign:'center'}}>⏳ กำลังโหลดข้อมูล...</td></tr>
+                    ) : filteredEmployees.map(emp => (
                       <tr key={emp.id}>
                         <td className="sticky-col">
-                           <div style={{fontWeight:'600'}}>{emp.name}</div>
-                           <div style={{fontSize:'0.75rem', color: emp.role === 'contractor' ? '#d97706' : '#94a3b8'}}>
+                          <div style={{fontWeight:'600', color:'#334155'}}>{emp.name}</div>
+                          <div style={{fontSize:'0.75rem', color: emp.role === 'contractor' ? '#d97706' : '#94a3b8'}}>
                               {emp.role === 'contractor' ? `ผู้รับเหมา: ${emp.company || '-'}` : `ID: ${emp.id}`}
-                           </div>
+                          </div>
+                          <div style={{fontSize:'0.7rem', color:'#cbd5e1'}}>
+                              {emp.lastSeen === '-' ? '' : `เข้าล่าสุด: ${emp.lastSeen}`}
+                          </div>
                         </td>
                         {allCourses.map(c => {
                             const p = emp.progress?.[c.id];
+                            // 🔥 ฟังก์ชันแปลงวันที่ (ปรับปรุงให้รองรับค่าว่าง)
+                            const getThaiDate = (dateString) => {
+                                if (!dateString) return "ไม่ระบุวันที่"; // กรณีไม่มีวันที่บันทึกไว้
+                                try {
+                                    const date = new Date(dateString);
+                                    // ตรวจสอบว่าเป็นวันที่ valid หรือไม่
+                                    if (isNaN(date.getTime())) return "วันที่ไม่ถูกต้อง";
+                                    
+                                    return date.toLocaleDateString('th-TH', {
+                                        day: 'numeric', month: 'short', year: '2-digit',
+                                        hour: '2-digit', minute: '2-digit', hour12: false
+                                    });
+                                } catch (e) { return "Error Date"; }
+                            };
+                            // สร้างข้อความ Tooltip เตรียมไว้ก่อน
+                            let tooltipText = "";
+                            if (!p) {
+                                tooltipText = `วิชา ${c.id}: ยังไม่เริ่มเรียน`;
+                            } else if (p.isCompleted) {
+                                // ✅ แสดงวันที่จบแบบชัดเจน
+                                tooltipText = `✅ ผ่านแล้ว\n📅 เมื่อ: ${getThaiDate(p.lastUpdated)}`;
+                            } else {
+                                // ✅ แสดงความคืบหน้า + วันที่ล่าสุด
+                                tooltipText = `🟡 กำลังเรียน (ได้ ${Math.floor(p.lastWatched || 0)} วินาที)\n📅 ล่าสุด: ${getThaiDate(p.lastUpdated)}`;
+                            }
                             return (
                                 <td key={c.id}>
                                     <div className="status-cell">
-                                        {!p ? <div className="badge-dot badge-none"></div> 
-                                        : p.isCompleted ? <span style={{color:'#10b981', fontWeight:'bold'}}>✓</span>
-                                        : <div className="badge-dot badge-learning"></div>}
+                                        {!p ? (
+                                          <div className="badge-dot badge-none" title={tooltipText}></div>
+                                        ) : p.isCompleted ? (
+                                          // Case: ผ่านแล้ว (สีเขียว)
+                                          <div 
+                                              title={tooltipText} // Tooltip ภาษาไทย
+                                              style={{
+                                                  color:'#10b981', 
+                                                  display:'flex', 
+                                                  alignItems:'center', 
+                                                  justifyContent:'center', 
+                                                  cursor:'help', 
+                                                  width:'100%', 
+                                                  height:'100%'
+                                              }}
+                                          >
+                                              <span style={{fontSize:'1.2rem', fontWeight:'bold'}}>✓</span>
+                                          </div>
+                                        ) : (
+                                          // Case: กำลังเรียน (สีส้ม)
+                                          <div 
+                                              className="badge-dot badge-learning" 
+                                              title={tooltipText} // Tooltip ภาษาไทย
+                                              style={{cursor:'help'}}
+                                          ></div>
+                                        )}
                                     </div>
                                 </td>
                             )
                         })}
-                        <td><button className="btn-reset" onClick={() => confirmReset(emp.id, emp.name)}>🔄</button></td>
+                        <td>
+                          <button className="btn-reset" onClick={() => confirmReset(emp.id, emp.name)} title="รีเซ็ตผลการเรียน">
+                            🔄
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

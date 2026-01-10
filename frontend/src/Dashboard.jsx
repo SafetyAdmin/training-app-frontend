@@ -442,12 +442,12 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
               
               {/* ... (ปุ่มและ Quiz Builder อื่นๆ เหมือนเดิม) ... */}
               <div style={{marginTop: '20px'}}>
-                  <button type="submit" className="btn btn-primary" style={{width: '100%', background: isEditing ? '#f59e0b' : '#4f46e5'}}>
-                      {isEditing ? '💾 บันทึกการแก้ไข' : '💾 บันทึกคอร์สเรียน'}
-                  </button>
+                      <button type="submit" className="btn btn-primary" style={{width: '100%', background: isEditing ? '#f59e0b' : '#4f46e5'}}>
+                          {isEditing ? '💾 บันทึกการแก้ไข' : '💾 บันทึกคอร์สเรียน'}
+                      </button>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
 
           {/* --- ส่วนที่ 2: ตาราง (ใส่ใน table-card-container) --- */}
           <div className="table-card-container">
@@ -466,17 +466,17 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
                   </thead>
                   <tbody>
                     {allCourses.map(course => (
-                      <tr key={course.id}>
-                        {/* ... เนื้อหาแถวตารางเหมือนเดิม ... */}
-                        <td>{course.title}</td>
-                        <td>{course.category}</td>
-                        <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('staff')} readOnly /></td>
-                        <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('contractor')} readOnly /></td>
-                        <td style={{textAlign:'center'}}>
-                            <button onClick={() => startEditCourse(course)}>✏️</button>
-                        </td>
-                      </tr>
-                    ))}
+                        <tr key={course.id}>
+                          {/* ... เนื้อหาแถวตารางเหมือนเดิม ... */}
+                          <td>{course.title}</td>
+                          <td>{course.category}</td>
+                          <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('staff')} readOnly /></td>
+                          <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('contractor')} readOnly /></td>
+                          <td style={{textAlign:'center'}}>
+                              <button onClick={() => startEditCourse(course)}>✏️</button>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>

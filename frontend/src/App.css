@@ -317,11 +317,13 @@ tbody td.sticky-col { text-align: left; padding-left: 16px; color: var(--slate-7
 
 /* จัด Layout ของหน้าจัดการคอร์ส */
 .manage-grid {
-  display: grid;
-  grid-template-columns: 1fr; /* ค่าเริ่มต้น: เรียงแนวตั้ง (สำหรับจอมือถือ/จอเล็ก) */
+  display: flex; /* เปลี่ยนจาก grid เป็น flex เพื่อความยืดหยุ่นสูง */
+  flex-wrap: wrap; /* ถ้าที่เหลือไม่พอ ให้ดีดลงข้างล่าง */
   gap: 20px;
   align-items: start;
+  width: 100%;
 }
+
 
 /* ถ้าหน้าจอกว้างกว่า 1024px (iPad Pro / Laptop / Desktop) ให้แบ่ง 2 คอลัมน์ */
 @media (min-width: 1024px) {
@@ -333,18 +335,20 @@ tbody td.sticky-col { text-align: left; padding-left: 16px; color: var(--slate-7
 
 /* ทำให้ Card ฟอร์มลอยตามเวลาเลื่อนหน้าจอ (Sticky) */
 .sticky-form-card {
-  height: fit-content;
+  flex: 1 1 350px; /* ขยายได้, หดได้, แต่ความกว้างที่เหมาะสมคือ 350px */
+  max-width: 100%; /* กันล้นจอ */
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   padding: 20px;
-  /* Sticky Logic */
-  position: sticky;
-  top: 20px; 
-  z-index: 10;
-  max-height: 90vh; /* กันฟอร์มยาวทะลุจอ */
-  overflow-y: auto; /* ถ้าฟอร์มยาวเกิน ให้มี Scrollbar ในตัว */
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
+
+.table-card-container {
+  flex: 2 1 600px; /* ให้ความสำคัญกับตารางมากกว่า (สัดส่วน 2) แต่ขั้นต่ำขอ 600px */
+  min-width: 0; /* สำคัญมาก: เพื่อให้ตารางภายในยอมหดตัว */
+}
+
+
 
 /* ปรับตารางให้เลื่อนซ้ายขวาได้ ถ้าข้อมูลล้น (ไม่ให้ดัน Layout แตก) */
 .table-wrapper {
@@ -353,4 +357,46 @@ tbody td.sticky-col { text-align: left; padding-left: 16px; color: var(--slate-7
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   width: 100%;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto; /* ถ้าตารางกว้างเกินไป ให้เลื่อนซ้ายขวาในนี้แทน */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* คอนเทนเนอร์หลักในหน้าจัดการ */
+.admin-layout-container {
+  display: grid;
+  grid-template-columns: 1fr; /* บนมือถือ: ให้ฟอร์มกับตารางเรียงต่อกันแนวตั้ง */
+  gap: 20px;
+  align-items: start;
+}
+
+/* เมื่อหน้าจอกว้างขึ้น (Desktop/Notebook) */
+@media (min-width: 1024px) {
+  .sticky-form-card {
+    position: sticky;
+    top: 20px;
+    z-index: 10;
+  }
+}
+
+/* ป้องกันตารางดันจนเบียดฟอร์ม */
+.table-responsive-wrapper {
+  overflow-x: auto; /* ถ้าตารางยาวไป ให้เกิด Scroll เฉพาะในตาราง ไม่ให้ Layout พัง */
+  width: 100%;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ทำให้ฟอร์มฝั่งซ้ายเลื่อนตามจอ (Sticky) เฉพาะหน้าจอใหญ่ */
+@media (min-width: 1024px) {
+  .sticky-form {
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+  }
 }

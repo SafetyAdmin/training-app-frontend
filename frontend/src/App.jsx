@@ -1,198 +1,280 @@
-// src/Dashboard.jsx
-import React, { useState, useEffect } from 'react';
+// src/App.jsx
+import React, { useState, useMemo, useEffect } from 'react';
 import './App.css';
+import TrainingVideoPlayer from './TrainingVideoPlayer';
+import Dashboard from './Dashboard';
+import Login from './Login';
+import QuizModal from './QuizModal'; // 🔥 import เข้ามา
 
-const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) => {
-
-  // --- STATE ---
-  const [employees, setEmployees] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState(initialTab || 'summary');
-  const [allCourses, setAllCourses] = useState([]);
+function App() {
+  const [user, setUser] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [activeTab, setActiveTab] = useState('Class'); 
+  const [myProgress, setMyProgress] = useState([]);    
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [showQuiz, setShowQuiz] = useState(false); // ควบคุมการแสดง Quiz
   
-  // 🔥 New Quiz State (Make sure these are defined)
-  const [quizQuestions, setQuizQuestions] = useState([]);
-  const [tempQ, setTempQ] = useState({ question: '', options: ['','','',''], answer: 0 });
-  
-  // UI States
-  const [notification, setNotification] = useState(null);
-  const [confirmModal, setConfirmModal] = useState(null);
+  // ✅ สร้าง State สำหรับเก็บรายชื่อคอร์ส
+  const [courses, setCourses] = useState([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
 
-  // Forms
-  const [newEmpId, setNewEmpId] = useState('');
-  const [newEmpName, setNewEmpName] = useState('');
-  const [newCourse, setNewCourse] = useState({
-      id: '', title: '', category: 'ทั่วไป', icon: '📺', url: '', duration: ''
-  });
-
-  // 🔥 Helper function for adding questions
-  const addQuestion = () => {
-      if(!tempQ.question || tempQ.options.some(o => !o)) return alert("กรอกข้อมูลให้ครบ");
-      setQuizQuestions([...quizQuestions, tempQ]);
-      setTempQ({ question: '', options: ['','','',''], answer: 0 }); // Reset form
+  const handleVideoEnded = (courseId) => {
+     const course = courses.find(c => c.id === courseId);
+     
+     // เช็คว่าคอร์สนี้มีคำถามไหม?
+     if (course && course.questions && course.questions.length > 0) {
+         setShowQuiz(true); // มีข้อสอบ -> เปิด Quiz Modal
+     } else {
+         // ไม่มีข้อสอบ -> จบเลย (เรียก API เดิมเพื่อเซฟ Completed)
+         // (ปกติ TrainingVideoPlayer จะเซฟให้อัตโนมัติอยู่แล้ว แต่ต้องแก้ไม่ให้มันเซฟ Completed จนกว่าจะสอบผ่าน)
+     }
   };
 
-  // ... (HELPERS and API functions remain the same) ...
-  const showToast = (type, message) => { /* ... */ };
-  const fetchReport = () => { /* ... */ };
-  const fetchCourses = () => { /* ... */ };
-  const toggleCourseRole = async (courseId, roleToToggle) => { /* ... */ };
-  
-  useEffect(() => { /* ... */ }, []);
-  useEffect(() => { /* ... */ }, [activeTab]);
-
-  // --- ACTIONS ---
-  const handleAddEmployee = async (e) => { /* ... */ };
-  const confirmDeleteEmployee = (id, name) => { /* ... */ };
-
-  const handleAddCourse = async (e) => {
-      e.preventDefault();
-      // 🔥 Combine course info with questions
-      const courseData = { ...newCourse, questions: quizQuestions }; 
+  // 🔥 ฟังก์ชันส่งคำตอบ
+  const handleSubmitQuiz = async (answers) => {
       try {
-        const res = await fetch('https://training-api-pvak.onrender.com/api/admin/add-course', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(courseData) // Send courseData instead of newCourse
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast('success', "✅ เพิ่มคอร์สสำเร็จ");
-            setNewCourse({ id: '', title: '', category: 'ทั่วไป', icon: '📺', url: '', duration: '' });
-            setQuizQuestions([]); // Clear questions after submit
-            fetchCourses();
-        } else { showToast('error', data.message); }
-      } catch (err) { showToast('error', "Server Error"); }
+          const res = await fetch('https://training-api-pvak.onrender.com/api/submit-quiz', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                  employeeId: user.employeeId,
+                  courseId: selectedCourse.id,
+                  answers: answers
+              })
+          });
+          const data = await res.json();
+          
+          if (data.isPassed) {
+              // ถ้าสอบผ่าน ให้รีเฟรชข้อมูล My Learning ใหม่เพื่อให้ขึ้นติ๊กถูก
+              // (คุณอาจต้องย้าย Logic fetch My Learning มาไว้เป็นฟังก์ชันกลางเพื่อเรียกซ้ำได้)
+          }
+          return data;
+      } catch (err) { console.error(err); return { isPassed: false }; }
   };
 
-  const confirmDeleteCourse = (id, title) => { /* ... */ };
-  const confirmReset = (employeeId, employeeName) => { /* ... */ };
-  const confirmResetAll = () => { /* ... */ };
-  const handlePrint = () => { /* ... */ };
+  // ✅ EFFECT 1: ดึงรายชื่อคอร์สจาก Server
+  useEffect(() => {
+    // ต้องรอให้ user login ก่อนถึงจะดึงคอร์ส (เพื่อจะได้รู้ role)
+    if (!user) return; 
 
-  const filteredEmployees = employees.filter(emp => 
-    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    emp.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    // ส่ง ?role=... ไปที่ Server
+    fetch(`https://training-api-pvak.onrender.com/api/courses?role=${user.role}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+            setCourses(data.data);
+        }
+        setIsLoadingCourses(false);
+      })
+      .catch(err => {
+          console.error("Failed to load courses", err);
+          setIsLoadingCourses(false);
+      });
+  }, [user]); // 🔥 ใส่ user ใน dependency array (พอ login ปุ๊บ โหลดปั๊บ)
+
+  // ✅ EFFECT 2: ดึงประวัติการเรียน (My Progress)
+  useEffect(() => {
+    if (user && activeTab === 'MyLearning') {
+      fetch(`https://training-api-pvak.onrender.com/api/my-learning/${user.employeeId}`) 
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setMyProgress(data.data);
+        })
+        .catch(err => console.error("Error fetching my learning:", err));
+    }
+  }, [user, activeTab]);
+
+  // 🔥 ฟังก์ชันเปลี่ยน Tab (แก้ปัญหา: กดแล้วไม่เปลี่ยนหน้า)
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    setSelectedCourse(null); // 🟢 สำคัญมาก! สั่งปิดวิดีโอทันที
+  };
+
+  // คำนวณหมวดหมู่
+  const categories = useMemo(() => [...new Set(courses.map(c => c.category))], [courses]);
+
+  // จัดกลุ่มคอร์ส
+  const groupedCourses = useMemo(() => {
+    const groups = {};
+    courses.forEach(course => {
+      if (activeCategory === 'All' || activeCategory === course.category) {
+        if (!groups[course.category]) groups[course.category] = [];
+        groups[course.category].push(course);
+      }
+    });
+    return groups;
+  }, [courses, activeCategory]);
+
+  // กรองคอร์สสำหรับ My Learning
+  const myLearningCourses = useMemo(() => {
+    if (activeTab !== 'MyLearning') return [];
+    return courses.filter(course => {
+      const record = myProgress.find(p => p.courseId === course.id);
+      return record !== undefined; 
+    }).map(course => {
+       const record = myProgress.find(p => p.courseId === course.id);
+       return { ...course, isCompleted: record.isCompleted, lastWatched: record.lastWatchedTime };
+    });
+  }, [courses, myProgress, activeTab]);
+
+  // --- Render Section ---
+
+  if (!user) return <Login onLogin={(u) => setUser(u)} />;
+  if (user.role === 'admin') return <Dashboard onLogout={() => setUser(null)} />;
 
   return (
     <div>
-      {/* ... (Navbar, Toast, Modal, Tab Navigation) ... */}
-      <nav className="navbar">...</nav>
-      {notification && <div>...</div>}
-      {confirmModal && <div>...</div>}
-      
-      <div className="main-container">
-        <div className="tab-menu">...</div>
+      <nav className="navbar">
+        <div className="nav-left">
+          <div className="brand-logo">🏭 SEC Learning Center</div>
+          
+          {/* ✅ เมนูเปลี่ยนหน้า (เรียกใช้ handleTabChange) */}
+          <div className="nav-menu">
+            <span 
+                onClick={() => handleTabChange('Class')} 
+                style={activeTab === 'Class' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}
+            >
+                Class
+            </span>
+            <span 
+                onClick={() => handleTabChange('MyLearning')} 
+                style={activeTab === 'MyLearning' ? {color:'#4f46e5', borderBottom:'2px solid #4f46e5'} : {}}
+            >
+                My Learning
+            </span>
+          </div>
+        </div>
+        
+        <div className="nav-right">
+          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2', marginRight: '8px'}}>
+            <span style={{fontWeight: '600', color: '#374151', fontSize: '0.95rem'}}>{user.name}</span>
+            <span style={{fontSize: '0.75rem', color: '#6b7280'}}>พนักงาน</span>
+          </div>
+          <button 
+            onClick={() => setUser(null)}
+            style={{
+              marginLeft: '10px', padding: '6px 12px', border: '1px solid #fee2e2',
+              backgroundColor: '#fff1f2', color: '#ef4444', borderRadius: '6px',
+              cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500'
+            }}
+          >
+            ออก
+          </button>
+        </div>
+      </nav>
 
-        {/* ... (Report Tab & Manage Employee Tab) ... */}
-        {activeTab === 'report' && ( <>...</> )}
-        {activeTab === 'manage' && ( <div>...</div> )}
+      <div className="dashboard-container">
+        {!selectedCourse ? (
+          <>
+            {/* --- TAB: CLASS --- */}
+            {activeTab === 'Class' && (
+              <>
+                {isLoadingCourses && (
+                    <div style={{textAlign:'center', padding:'2rem', color:'#6b7280'}}>
+                        ⏳ กำลังโหลดรายชื่อวิชาจากระบบ...
+                    </div>
+                )}
 
-        {/* --- TAB 3: MANAGE COURSES --- */}
-        {activeTab === 'courses' && (
-         <div className="manage-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-            
-            {/* 1. Form Create Course + Quiz */}
-            <div className="card" style={{height:'fit-content'}}>
-                <h3>➕ เพิ่มหลักสูตรใหม่</h3>
-                <form onSubmit={handleAddCourse}>
-                    {/* ... (Existing inputs for ID, Category, Title, URL, Duration) ... */}
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px'}}>
-                        <div>
-                            <label>รหัสวิชา</label>
-                            <input className="input-field" value={newCourse.id} onChange={e => setNewCourse({...newCourse, id: e.target.value})} required placeholder="Ex. C01" />
+                {!isLoadingCourses && (
+                    <div className="category-filter-scroll">
+                    <div className={`filter-card ${activeCategory === 'All' ? 'active' : ''}`} onClick={() => setActiveCategory('All')} style={{background: '#02d6fcff'}}>
+                        <h4>Show All Resources</h4><span>{courses.length} courses</span>
+                    </div>
+                    {categories.map(cat => (
+                        <div key={cat} className={`filter-card ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
+                        <h4>{cat}</h4><span>{courses.filter(c => c.category === cat).length} courses</span>
                         </div>
-                        <div>
-                            <label>หมวดหมู่</label>
-                            <input className="input-field" value={newCourse.category} onChange={e => setNewCourse({...newCourse, category: e.target.value})} required />
-                        </div>
+                    ))}
                     </div>
-                    <div style={{marginTop:'10px'}}>
-                        <label>ชื่อวิชา</label>
-                        <input className="input-field" value={newCourse.title} onChange={e => setNewCourse({...newCourse, title: e.target.value})} required />
-                    </div>
-                    <div style={{marginTop:'10px'}}>
-                        <label>YouTube URL</label>
-                        <input className="input-field" value={newCourse.url} onChange={e => setNewCourse({...newCourse, url: e.target.value})} required />
-                    </div>
-                    <div style={{marginTop:'10px', marginBottom:'20px'}}>
-                        <label>ความยาว (นาที)</label>
-                        <input className="input-field" value={newCourse.duration} onChange={e => setNewCourse({...newCourse, duration: e.target.value})} required placeholder="Ex. 15 นาที" />
-                    </div>
+                )}
 
-                    {/* 🔥🔥 INSERT QUIZ BUILDER HERE 🔥🔥 */}
-                    <div style={{borderTop:'1px solid #eee', paddingTop:'15px'}}>
-                        <h4>📝 สร้างข้อสอบ (ถ้ามี)</h4>
-                        
-                        {/* List of added questions */}
-                        {quizQuestions.length > 0 && (
-                            <div style={{background:'#f9fafb', padding:'10px', borderRadius:'8px', marginBottom:'15px', maxHeight:'150px', overflowY:'auto'}}>
-                                {quizQuestions.map((q, i) => (
-                                    <div key={i} style={{fontSize:'0.85rem', marginBottom:'5px', borderBottom:'1px solid #eee', paddingBottom:'5px'}}>
-                                        <b>{i+1}. {q.question}</b> <br/>
-                                        <span style={{color:'#10b981'}}>เฉลย: {q.options[q.answer]}</span>
-                                    </div>
-                                ))}
+                {!isLoadingCourses && courses.length === 0 && (
+                    <div style={{textAlign:'center', marginTop:'2rem'}}>🚫 ไม่พบวิชาในระบบ (กรุณาแจ้ง Admin)</div>
+                )}
+
+                <h3 className="section-title">Category Group</h3>
+                <div className="groups-grid">
+                  {Object.keys(groupedCourses).map(groupName => (
+                    <div key={groupName} className="group-card">
+                      <div className="group-header"><span>{groupName} &gt;</span></div>
+                      {groupedCourses[groupName].map(course => (
+                        <div key={course.id} className="course-list-item" onClick={() => setSelectedCourse(course)}>
+                          <div className="course-thumb" style={{
+                             background: groupName.includes('Safety') ? '#fee2e2' : groupName.includes('5S') ? '#dcfce7' : '#e0e7ff',
+                             color: groupName.includes('Safety') ? '#ef4444' : groupName.includes('5S') ? '#166534' : '#4f46e5'
+                          }}>{course.icon}</div>
+                          <div className="course-info">
+                            <div className="course-title">{course.title}</div>
+                            <div className="course-meta"><span>Online</span><span>|</span><span>🕒 {course.duration}</span></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* --- TAB: MY LEARNING --- */}
+            {activeTab === 'MyLearning' && (
+              <>
+                <h3 className="section-title">My Learning History</h3>
+                {myLearningCourses.length === 0 ? (
+                  <div style={{textAlign:'center', padding:'4rem', color:'#94a3b8'}}>
+                    <div style={{fontSize:'3rem', marginBottom:'1rem'}}>📭</div>
+                    <p>คุณยังไม่ได้เริ่มเรียนวิชาใดเลย</p>
+                    <button onClick={() => handleTabChange('Class')} className="btn-start-course" style={{maxWidth:'200px', margin:'1rem auto', padding:'10px', background:'#4f46e5', color:'white', border:'none', borderRadius:'6px', cursor:'pointer'}}>ไปที่หน้าคอร์สเรียน</button>
+                  </div>
+                ) : (
+                  <div className="groups-grid">
+                      <div className="group-card" style={{gridColumn:'1 / -1'}}>
+                          <div className="group-header"><span>หลักสูตรที่คุณเรียนไปแล้ว</span></div>
+                          {myLearningCourses.map(course => (
+                            <div key={course.id} className="course-list-item" onClick={() => setSelectedCourse(course)}>
+                              <div className="course-thumb" style={{background:'#f3f4f6', color:'#6b7280'}}>{course.icon}</div>
+                              <div className="course-info" style={{flex:1}}>
+                                <div className="course-title">{course.title}</div>
+                                <div className="course-meta">
+                                  {course.isCompleted ? <span className="status-badge status-completed">✅ ผ่านแล้ว</span> : <span className="status-badge status-pending">🟡 กำลังเรียน ({Math.floor(course.lastWatched)} วินาที)</span>}
+                                </div>
+                              </div>
+                              <div style={{display:'flex', alignItems:'center'}}><button className="icon-btn">▶</button></div>
                             </div>
-                        )}
-
-                        {/* Add new question form */}
-                        <div style={{background:'#f0f9ff', padding:'10px', borderRadius:'8px', border:'1px dashed #bae6fd'}}>
-                            <input 
-                                placeholder="โจทย์คำถาม..." 
-                                value={tempQ.question} 
-                                onChange={e=>setTempQ({...tempQ, question: e.target.value})} 
-                                className="input-field" 
-                                style={{marginBottom:'5px'}}
-                            />
-                            
-                            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'5px'}}>
-                                {tempQ.options.map((opt, idx) => (
-                                    <div key={idx} style={{display:'flex', alignItems:'center', background:'white', borderRadius:'4px', padding:'0 5px'}}>
-                                        <input 
-                                            type="radio" 
-                                            name="correct" 
-                                            checked={tempQ.answer === idx} 
-                                            onChange={()=>setTempQ({...tempQ, answer: idx})} 
-                                            style={{marginRight:'5px'}}
-                                        />
-                                        <input 
-                                            placeholder={`ตัวเลือก ${idx+1}`} 
-                                            value={opt} 
-                                            onChange={e=>{
-                                                const newOpts = [...tempQ.options];
-                                                newOpts[idx] = e.target.value;
-                                                setTempQ({...tempQ, options: newOpts});
-                                            }} 
-                                            style={{border:'none', width:'100%', outline:'none', fontSize:'0.85rem'}}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                            <button type="button" onClick={addQuestion} className="btn" style={{marginTop:'10px', width:'100%', background:'#0ea5e9', color:'white', fontSize:'0.8rem'}}>+ เพิ่มข้อนี้เข้าคอร์ส</button>
-                        </div>
-                    </div>
-                    {/* 🔥🔥 END QUIZ BUILDER 🔥🔥 */}
-
-                    <button type="submit" className="btn btn-primary" style={{width:'100%', marginTop:'20px', padding:'12px'}}>💾 บันทึกคอร์สเรียน</button>
-                </form>
+                          ))}
+                      </div>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        ) : (
+          /* --- VIDEO PLAYER PAGE --- */
+          <div style={{marginTop:'2rem'}}>
+            <button onClick={() => setSelectedCourse(null)} style={{background:'white', border:'1px solid #e5e7eb', padding:'0.5rem 1rem', borderRadius:'8px', cursor:'pointer', marginBottom:'1rem', fontWeight:'600'}}>⬅️ Back</button>
+            <div style={{background:'white', padding:'2rem', borderRadius:'16px', boxShadow:'0 4px 6px rgba(0,0,0,0.05)'}}>
+               <h2 style={{marginTop:0}}>{selectedCourse.icon} {selectedCourse.title}</h2>
+               <TrainingVideoPlayer 
+                 videoUrl={selectedCourse.url}
+                 employeeId={user.employeeId}
+                 employeeName={user.name}
+                 courseId={selectedCourse.id}
+                 hasExam={selectedCourse.questions && selectedCourse.questions.length > 0}
+                 onVideoEnd={() => handleVideoEnded(selectedCourse.id)}
+               />
+               {/* 🔥 แสดง Quiz Modal ถ้า showQuiz = true */}
+               {showQuiz && (
+                   <QuizModal 
+                       course={selectedCourse} 
+                       onSubmit={handleSubmitQuiz}
+                       onCancel={() => { setShowQuiz(false); setSelectedCourse(null); }} // สอบผ่าน/ปิด -> กลับหน้าหลัก
+                   />
+               )}
             </div>
-
-            {/* 2. Course List Table (Existing code) */}
-            <div className="card">
-               <h3>🎬 รายชื่อวิชาทั้งหมด</h3>
-               <div className="table-wrapper">
-                   {/* ... (Existing table code) ... */}
-               </div>
-            </div>
-         </div>
+          </div>
         )}
-
       </div>
     </div>
   );
-};
+}
 
-export default Dashboard;
+export default App;

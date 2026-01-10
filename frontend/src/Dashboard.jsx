@@ -515,16 +515,16 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
                                     <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('staff')} readOnly /></td>
                                     <td style={{textAlign:'center'}}><input type="checkbox" checked={course.allowedRoles?.includes('contractor')} readOnly /></td>
                                     <td style={{textAlign:'center'}}>
-                                        <button onClick={() => startEditCourse(course)}>✏️</button>
-                                                <button onClick={() => confirmDeleteCourse(course.id, course.title)} style={{background:'#fee2e2', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>🗑️</button>
+                                        <button onClick={() => startEditCourse(course)} style={{background:'#f3f4f6', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>✏️</button>
+                                        <button onClick={() => confirmDeleteCourse(course.id, course.title)} style={{background:'#fee2e2', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>🗑️</button>
                                             </td>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            </div>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
           )}
 

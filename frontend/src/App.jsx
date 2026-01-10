@@ -18,7 +18,11 @@ function App() {
 
   // ✅ EFFECT 1: ดึงรายชื่อคอร์สจาก Server
   useEffect(() => {
-    fetch('https://training-api-pvak.onrender.com/api/courses')
+    // ต้องรอให้ user login ก่อนถึงจะดึงคอร์ส (เพื่อจะได้รู้ role)
+    if (!user) return; 
+
+    // ส่ง ?role=... ไปที่ Server
+    fetch(`https://training-api-pvak.onrender.com/api/courses?role=${user.role}`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -30,7 +34,7 @@ function App() {
           console.error("Failed to load courses", err);
           setIsLoadingCourses(false);
       });
-  }, []);
+  }, [user]); // 🔥 ใส่ user ใน dependency array (พอ login ปุ๊บ โหลดปั๊บ)
 
   // ✅ EFFECT 2: ดึงประวัติการเรียน (My Progress)
   useEffect(() => {

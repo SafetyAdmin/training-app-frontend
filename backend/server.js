@@ -95,6 +95,19 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// 🔥 [ใหม่] API สำหรับ Admin แก้ไขสิทธิ์การเข้าถึงคอร์ส
+app.post('/api/admin/update-course-roles', async (req, res) => {
+  const { courseId, allowedRoles } = req.body;
+  
+  try {
+    // หาคอร์สและอัปเดต allowedRoles
+    await Course.findOneAndUpdate({ id: courseId }, { allowedRoles });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 🔥 [ใหม่] API ลงทะเบียน/เข้าใช้งาน สำหรับผู้รับเหมา
 app.post('/api/contractor-login', async (req, res) => {
     const { idCard, name, company } = req.body; // รับเลขบัตร, ชื่อ, บริษัท

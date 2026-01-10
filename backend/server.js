@@ -51,10 +51,62 @@ const courseSchema = new mongoose.Schema({
   icon: String,
   url: String,
   duration: String,
-  // 🔥 [เพิ่ม] ใครมีสิทธิ์ดูบ้าง (ค่าเริ่มต้นคือดูได้ทั้งคู่)
-  allowedRoles: { type: [String], default: ['staff', 'contractor'] } 
+  allowedRoles: { type: [String], default: ['staff', 'contractor'] },
+  // 🔥 [ใหม่] เก็บรายการคำถาม (Array)
+  questions: [{
+      question: String,      // โจทย์
+      options: [String],     // ตัวเลือก [ก, ข, ค, ง]
+      answer: Number         // เฉลย (เก็บเป็น Index 0-3)
+  }]
 });
 const Course = mongoose.model('Course', courseSchema);
+
+// 2. เพิ่ม API สำหรับตรวจข้อสอบ (Submit Quiz)
+app.post('/api/submit-quiz', async (req, res) => {
+    const { employeeId, employeeName, courseId, answers } = req.body;
+    // answers = [0, 1, 3...] (คำตอบที่ user เลือก)
+
+    try {
+        const course = await Course.findOne({ id: courseId });
+        if (!course) return res.json({ success: false, message: 'ไม่พบคอร์ส' });
+
+        // ตรวจคำตอบ
+        let score = 0;
+        const total = course.questions.length;
+
+        course.questions.forEach((q, index) => {
+            if (q.answer === parseInt(answers[index])) {
+                score++;
+            }
+        });
+
+        // เกณฑ์ผ่าน (เช่นต้องได้มากกว่า 50%)
+        const isPassed = (score / total) >= 0.5;
+
+        if (isPassed) {
+            // ถ้าผ่าน -> บันทึกว่าเรียนจบแล้ว (isCompleted = true)
+            let emp = await Employee.findOne({ employeeId });
+            if (!emp.progress) emp.progress = {};
+            
+            emp.progress[courseId] = {
+                ...emp.progress[courseId], // เก็บเวลาที่ดูวิดีโอล่าสุดไว้
+                isCompleted: true,         // ✅ ให้ผ่าน
+                score: score,              // เก็บคะแนนไว้ดูเล่น
+                lastUpdated: new Date()
+            };
+            
+            // อัปเดต lastSeen
+            emp.lastSeen = new Date().toLocaleString('th-TH');
+            
+            await Employee.findOneAndUpdate({ employeeId }, { progress: emp.progress, lastSeen: emp.lastSeen });
+        }
+
+        res.json({ success: true, isPassed, score, total });
+
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 
 // --- 3. API ฝั่งนักเรียน (Student) ---
 

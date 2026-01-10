@@ -36,8 +36,10 @@ const Progress = mongoose.model('Progress', progressSchema);
 
 // Model 2: ข้อมูลพนักงาน (Employee)
 const employeeSchema = new mongoose.Schema({
-  employeeId: String,
-  name: String
+  employeeId: String, // สำหรับผู้รับเหมา ใช้เลขบัตร ปชช. แทน
+  name: String,
+  role: { type: String, default: 'staff' }, // 'staff' หรือ 'contractor'
+  company: { type: String, default: '-' }   // ชื่อบริษัทผู้รับเหมา
 });
 const Employee = mongoose.model('Employee', employeeSchema);
 
@@ -59,9 +61,43 @@ app.post('/api/login', async (req, res) => {
   const { employeeId } = req.body;
   try {
     const emp = await Employee.findOne({ employeeId });
-    if (emp) res.json({ success: true, name: emp.name, employeeId: emp.employeeId });
-    else res.json({ success: false, message: 'ไม่พบรหัสพนักงาน' });
+    if (emp) {
+        // เช็คว่าเป็นพนักงานจริงไหม (กันผู้รับเหมามาเนียนเข้าช่องนี้)
+        // หรือจะปล่อยให้เข้าได้หมดก็ได้ แล้วแต่ Design
+        res.json({ success: true, name: emp.name, employeeId: emp.employeeId, role: emp.role, company: emp.company });
+    } else {
+        res.json({ success: false, message: 'ไม่พบรหัสพนักงานในระบบ' });
+    }
   } catch (err) { res.status(500).json({ success: false }); }
+});
+
+// 🔥 [ใหม่] API ลงทะเบียน/เข้าใช้งาน สำหรับผู้รับเหมา
+app.post('/api/contractor-login', async (req, res) => {
+    const { idCard, name, company } = req.body; // รับเลขบัตร, ชื่อ, บริษัท
+    try {
+        // เช็คว่าเคยเข้ามาหรือยัง
+        let contractor = await Employee.findOne({ employeeId: idCard });
+        
+        if (!contractor) {
+            // ถ้ายังไม่เคย -> สร้างใหม่เลย (Auto Register)
+            contractor = new Employee({
+                employeeId: idCard,
+                name: name,
+                role: 'contractor',
+                company: company
+            });
+            await contractor.save();
+        } else {
+            // ถ้าเคยแล้ว -> อัปเดตข้อมูลล่าสุด (เผื่อเปลี่ยนชื่อ/บริษัท)
+            contractor.name = name;
+            contractor.company = company;
+            await contractor.save();
+        }
+
+        res.json({ success: true, name: contractor.name, employeeId: contractor.employeeId, role: 'contractor', company: contractor.company });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
 });
 
 // ดึงรายชื่อคอร์สทั้งหมด (ใหม่!)

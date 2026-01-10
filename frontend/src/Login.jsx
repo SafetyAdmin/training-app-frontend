@@ -60,7 +60,7 @@ const Login = ({ onLogin }) => {
         <div style={{textAlign:'center', marginBottom:'1.5rem'}}>
             <div style={{fontSize:'3rem', marginBottom:'10px'}}>🏭</div>
             <h2 style={{margin:0, color:'#1e293b'}}>Safety Training</h2>
-            <p style={{color:'#64748b'}}>ระบบอบรมความปลอดภัยก่อนเข้างาน</p>
+            <p style={{color:'#64748b'}}>ระบบอบรมความปลอดภัย</p>
         </div>
 
         {/* Tab Switcher */}

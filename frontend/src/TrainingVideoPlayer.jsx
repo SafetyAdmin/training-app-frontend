@@ -1,8 +1,8 @@
-// src/TrainingVideoPlayer.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import ReactPlayer from 'react-player';
 
-const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) => {
+// 1. 🔥 เพิ่ม onVideoEnd ในปีกกา เพื่อรับฟังก์ชันมาจาก App.jsx
+const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId, hasExam, onVideoEnd }) => {
   // --- STATE ---
   const [playedSeconds, setPlayedSeconds] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
@@ -113,7 +113,20 @@ const TrainingVideoPlayer = ({ videoUrl, employeeId, employeeName, courseId }) =
 
   const handleManualResume = () => { setShowResumeBtn(false); if(playerRef.current) playerRef.current.seekTo(savedTimeRef.current); setTimeout(()=>setPlaying(true),300); };
   const handleStartNew = () => { setShowResumeBtn(false); savedTimeRef.current=0; maxWatchedTime.current=0; if(playerRef.current) playerRef.current.seekTo(0); setPlaying(true); };
-  const handleEnded = () => { saveProgress(totalDuration,totalDuration); setStatusMsg('🎉 จบแล้ว!'); setPlaying(false); setIsFloating(false); };
+  
+  // 2. 🔥 แก้ไขฟังก์ชัน handleEnded
+  const handleEnded = () => { 
+      saveProgress(totalDuration, totalDuration); 
+      setStatusMsg('🎉 จบแล้ว!'); 
+      setPlaying(false); 
+      setIsFloating(false); 
+      
+      // ✅ เพิ่มตรงนี้: เรียก Callback กลับไปที่ App เพื่อเช็คว่าต้องเด้งข้อสอบไหม
+      if (onVideoEnd) {
+          console.log("Video ended, calling parent...");
+          onVideoEnd();
+      }
+  };
 
   // --- STYLES ---
   const containerStyle = isFloating ? {

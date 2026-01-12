@@ -41,11 +41,36 @@
 body {
   margin: 0;
   font-family: var(--font-main);
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   color: var(--slate-700);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+
+  /* สร้างการไล่สี 4 เฉด (ฟ้าอ่อน, ม่วงอ่อน, เขียวอมฟ้าอ่อน, ชมพูอ่อน) */
+  background: linear-gradient(
+    -45deg, 
+    #f0f9ff, /* ฟ้าอ่อนมาก */
+    #e0e7ff, /* ม่วงคราม */
+    #ecfeff, /* เขียวไซอัน */
+    #fce7f3  /* ชมพูจางๆ */
+  );
+  /* ขยายขนาดพื้นหลังให้ใหญ่กว่าจอ 4 เท่า เพื่อให้มีพื้นที่วิ่ง */
+  background-size: 400% 400%;
+  
+  /* สั่งให้เล่นอนิเมชั่นชื่อ gradientBG นาน 15 วิ แบบวนลูป */
+  animation: gradientBG 15s ease infinite;
+}
+
+/* คีย์เฟรมสำหรับสั่งให้พื้นหลังเลื่อนตำแหน่ง */
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* =========================================

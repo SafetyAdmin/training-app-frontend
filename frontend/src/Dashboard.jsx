@@ -302,11 +302,11 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
                     <tr>
                       <th className="sticky-col" style={{minWidth: '250px'}}>รายชื่อพนักงาน ({filteredEmployees.length})</th>
                       {allCourses.map(c => (
-                        <th key={c.id} style={{textAlign:'center', minWidth:'80px'}}>
-                           <div style={{display:'flex', flexDirection:'column', alignItems:'center'}}>
+                        <th key={c.id} title={c.title} style={{textAlign:'center', minWidth:'80px', cursor: 'help'}}>
+                          <div style={{display:'flex', flexDirection:'column', alignItems:'center'}}>
                               <span style={{fontSize:'1.5rem'}}>{c.icon || '📺'}</span>
                               <span style={{fontSize:'0.75rem', color:'#64748b'}}>{c.id}</span>
-                           </div>
+                          </div>
                         </th>
                       ))}
                       <th style={{textAlign:'center', minWidth:'80px'}}>Action</th>

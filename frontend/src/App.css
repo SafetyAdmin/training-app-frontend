@@ -716,3 +716,78 @@ tbody td.sticky-col { text-align: left; padding-left: 16px; color: var(--slate-7
     overflow-y: auto;
   }
 }
+
+/* =========================================
+   8. MODAL & POPUP STYLES
+   ========================================= */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6); /* ฉากหลังสีเข้มโปร่งแสง */
+  backdrop-filter: blur(4px); /* เบลอฉากหลังนิดๆ */
+  z-index: 2000; /* ให้ลอยเหนือ Navbar */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-box {
+  background: white;
+  width: 100%;
+  max-width: 500px; /* ความกว้างสูงสุดของ Popup */
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  position: relative;
+  max-height: 90vh; /* กัน Popup สูงเกินจอ */
+  overflow-y: auto; /* ถ้าสูงเกินให้เลื่อนได้ */
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ปุ่มปิด (X) มุมขวาบน */
+.btn-close-modal {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--slate-500);
+  cursor: pointer;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.btn-close-modal:hover {
+  background-color: var(--slate-100);
+  color: var(--danger);
+}
+
+/* ปุ่มเพิ่มขนาดใหญ่ (สำหรับเปิด Popup) */
+.btn-add-trigger {
+  width: 100%;
+  padding: 16px;
+  background: white;
+  border: 2px dashed var(--slate-300);
+  border-radius: 12px;
+  color: var(--slate-500);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-bottom: 20px;
+}
+.btn-add-trigger:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

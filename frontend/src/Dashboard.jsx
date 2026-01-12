@@ -1,4 +1,3 @@
-// src/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
@@ -8,14 +7,18 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState(initialTab || 'summary');
+  const [activeTab, setActiveTab] = useState(initialTab || 'report'); // เปลี่ยน default เป็น report
   const [allCourses, setAllCourses] = useState([]); 
   
+  // 🔥 Popup States (เพิ่มใหม่)
+  const [showEmpModal, setShowEmpModal] = useState(false);
+  const [showCourseModal, setShowCourseModal] = useState(false);
+
   // 🔥 Quiz State
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [tempQ, setTempQ] = useState({ question: '', options: ['','','',''], answer: 0 });
   
-  // 🔥 Edit Mode State (เพิ่มใหม่)
+  // 🔥 Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
 
   // UI States
@@ -35,21 +38,19 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // 🔥 Helper: Add Question to local state
   const addQuestion = () => {
       if(!tempQ.question || tempQ.options.some(o => !o)) return alert("กรอกข้อมูลให้ครบ");
       setQuizQuestions([...quizQuestions, tempQ]);
-      setTempQ({ question: '', options: ['','','',''], answer: 0 }); // Reset form
+      setTempQ({ question: '', options: ['','','',''], answer: 0 }); 
   };
 
-  // 🔥 Helper: Remove Question (เพิ่มใหม่)
   const removeQuestion = (index) => {
       const newQ = [...quizQuestions];
       newQ.splice(index, 1);
       setQuizQuestions(newQ);
   };
 
-  // --- ACTIONS FOR EDITING (เพิ่มใหม่) ---
+  // --- ACTIONS FOR EDITING ---
   const startEditCourse = (course) => {
       setIsEditing(true);
       setNewCourse({
@@ -61,11 +62,12 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
           duration: course.duration
       });
       setQuizQuestions(course.questions || []);
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // เลื่อนขึ้นไปหาฟอร์ม
+      setShowCourseModal(true); // 🔥 เปิด Popup เมื่อกดแก้ไข
   };
 
-  const cancelEdit = () => {
-      setIsEditing(false);
+  const closeCourseModal = () => {
+      setShowCourseModal(false);
+      setIsEditing(false); // Reset Edit Mode
       setNewCourse({ id: '', title: '', category: 'ทั่วไป', icon: '📺', url: '', duration: '' });
       setQuizQuestions([]);
   };
@@ -92,13 +94,11 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
         .catch(err => console.error("Course Error:", err));
   };
 
-  // 1. Load Data
   useEffect(() => {
     fetchReport();
     fetchCourses();
   }, []);
 
-  // 2. Toggle Role
   const toggleCourseRole = async (courseId, roleToToggle) => {
     const course = allCourses.find(c => c.id === courseId);
     if (!course) return;
@@ -111,7 +111,6 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
         newRoles.push(roleToToggle);
     }
 
-    // Optimistic Update
     const updatedCourses = allCourses.map(c => 
         c.id === courseId ? { ...c, allowedRoles: newRoles } : c
     );
@@ -141,7 +140,9 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
       const data = await res.json();
       if (data.success) {
         showToast('success', "✅ เพิ่มพนักงานแล้ว");
-        setNewEmpId(''); setNewEmpName(''); fetchReport(); 
+        setNewEmpId(''); setNewEmpName(''); 
+        setShowEmpModal(false); // 🔥 ปิด Popup เมื่อสำเร็จ
+        fetchReport(); 
       } else { showToast('error', data.message); }
     } catch (error) { showToast('error', "Server Error"); }
   };
@@ -160,12 +161,10 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
     });
   };
 
-  // 🔥 Modified Save Course (รองรับทั้ง Create และ Edit)
   const handleSaveCourse = async (e) => {
       e.preventDefault();
       const courseData = { ...newCourse, questions: quizQuestions }; 
       
-      // เลือก Endpoint ตามโหมด
       const endpoint = isEditing 
           ? 'https://training-api-pvak.onrender.com/api/admin/edit-course'
           : 'https://training-api-pvak.onrender.com/api/admin/add-course';
@@ -179,7 +178,7 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
         const data = await res.json();
         if (data.success) {
             showToast('success', isEditing ? "✅ แก้ไขข้อมูลเรียบร้อย" : "✅ เพิ่มคอร์สสำเร็จ");
-            cancelEdit(); // Reset form & Exit edit mode
+            closeCourseModal(); // 🔥 ปิด Popup เมื่อสำเร็จ
             fetchCourses();
         } else { showToast('error', data.message); }
       } catch (err) { showToast('error', "Server Error"); }
@@ -258,10 +257,10 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
         </div>
       )}
 
-      {/* Modal */}
+      {/* Confirm Modal */}
       {confirmModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'white', padding: '25px', borderRadius: '12px', maxWidth: '400px', width: '90%' }}>
+        <div className="modal-overlay">
+          <div className="modal-box" style={{maxWidth:'400px'}}>
             <h3 style={{ marginTop: 0 }}>{confirmModal.title}</h3>
             <p style={{ whiteSpace: 'pre-line', marginBottom: '20px' }}>{confirmModal.message}</p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -270,6 +269,104 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
             </div>
           </div>
         </div>
+      )}
+
+      {/* 🔥 Employee Modal (Popup เพิ่มพนักงาน) */}
+      {showEmpModal && (
+          <div className="modal-overlay" onClick={() => setShowEmpModal(false)}>
+              <div className="modal-box" onClick={e => e.stopPropagation()}>
+                  <button className="btn-close-modal" onClick={() => setShowEmpModal(false)}>✕</button>
+                  <h2 style={{marginTop:0}}>➕ เพิ่มพนักงานใหม่</h2>
+                  <form onSubmit={handleAddEmployee}>
+                      <div style={{marginBottom:'15px'}}>
+                          <label>รหัสพนักงาน</label>
+                          <input className="input-field" value={newEmpId} onChange={e => setNewEmpId(e.target.value)} required autoFocus placeholder="Ex. EMP001" />
+                      </div>
+                      <div style={{marginBottom:'20px'}}>
+                          <label>ชื่อ-นามสกุล</label>
+                          <input className="input-field" value={newEmpName} onChange={e => setNewEmpName(e.target.value)} required placeholder="Ex. สมชาย ใจดี" />
+                      </div>
+                      <button type="submit" className="btn btn-primary" style={{width:'100%'}}>บันทึกข้อมูล</button>
+                  </form>
+              </div>
+          </div>
+      )}
+
+      {/* 🔥 Course Modal (Popup เพิ่ม/แก้ไขคอร์ส) */}
+      {showCourseModal && (
+          <div className="modal-overlay" onClick={closeCourseModal}>
+              <div className="modal-box" onClick={e => e.stopPropagation()} style={{maxWidth:'600px'}}>
+                  <button className="btn-close-modal" onClick={closeCourseModal}>✕</button>
+                  <h2 style={{marginTop:0, color: isEditing ? '#f59e0b' : '#333'}}>
+                    {isEditing ? `✏️ แก้ไขวิชา: ${newCourse.id}` : '➕ เพิ่มหลักสูตรใหม่'}
+                  </h2>
+                  
+                  <form onSubmit={handleSaveCourse}>
+                      <div style={{display:'flex', gap:'15px'}}>
+                        <div style={{flex:1}}>
+                          <label>รหัสวิชา</label>
+                          <input className="input-field" value={newCourse.id} onChange={e => setNewCourse({...newCourse, id: e.target.value})} required disabled={isEditing} />
+                        </div>
+                        <div style={{flex:1}}>
+                          <label>หมวดหมู่</label>
+                          <input className="input-field" value={newCourse.category} onChange={e => setNewCourse({...newCourse, category: e.target.value})} required />
+                        </div>
+                      </div>
+                      
+                      <div style={{marginTop:'10px'}}>
+                          <label>ชื่อวิชา</label>
+                          <input className="input-field" value={newCourse.title} onChange={e => setNewCourse({...newCourse, title: e.target.value})} required />
+                      </div>
+                      <div style={{marginTop:'10px'}}>
+                          <label>YouTube URL</label>
+                          <input className="input-field" value={newCourse.url} onChange={e => setNewCourse({...newCourse, url: e.target.value})} required />
+                      </div>
+                      <div style={{marginTop:'10px', marginBottom:'20px'}}>
+                          <label>ความยาว (นาที)</label>
+                          <input className="input-field" value={newCourse.duration} onChange={e => setNewCourse({...newCourse, duration: e.target.value})} required placeholder="Ex. 15 นาที" />
+                      </div>
+
+                      {/* Quiz Section in Modal */}
+                      <div style={{background:'#f8fafc', padding:'15px', borderRadius:'8px', border:'1px solid #e2e8f0'}}>
+                          <h4 style={{marginTop:0}}>📝 สร้างข้อสอบ ({quizQuestions.length} ข้อ)</h4>
+                          
+                          {/* List of questions */}
+                          {quizQuestions.length > 0 && (
+                              <div style={{marginBottom:'15px', maxHeight:'150px', overflowY:'auto', borderBottom:'1px solid #ddd'}}>
+                                  {quizQuestions.map((q, i) => (
+                                      <div key={i} style={{fontSize:'0.85rem', marginBottom:'8px', position:'relative'}}>
+                                          <b>{i+1}. {q.question}</b> 
+                                          <button type="button" onClick={() => removeQuestion(i)} style={{marginLeft:'10px', color:'red', border:'none', background:'none', cursor:'pointer'}}>ลบ</button>
+                                      </div>
+                                  ))}
+                              </div>
+                          )}
+
+                          <div style={{display:'flex', gap:'5px', marginBottom:'5px'}}>
+                              <input placeholder="โจทย์คำถาม..." value={tempQ.question} onChange={e=>setTempQ({...tempQ, question: e.target.value})} className="input-field" style={{marginBottom:0}} />
+                          </div>
+                          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'5px'}}>
+                              {tempQ.options.map((opt, idx) => (
+                                  <div key={idx} style={{display:'flex', alignItems:'center'}}>
+                                      <input type="radio" name="correct" checked={tempQ.answer === idx} onChange={()=>setTempQ({...tempQ, answer: idx})} style={{marginRight:'5px'}} />
+                                      <input placeholder={`ตัวเลือก ${idx+1}`} value={opt} onChange={e=>{
+                                          const newOpts = [...tempQ.options]; newOpts[idx] = e.target.value;
+                                          setTempQ({...tempQ, options: newOpts});
+                                      }} className="input-field" style={{fontSize:'0.8rem', padding:'8px', marginBottom:0}} />
+                                  </div>
+                              ))}
+                          </div>
+                          <button type="button" onClick={addQuestion} className="btn" style={{marginTop:'10px', width:'100%', background:'#e0f2fe', color:'#0284c7'}}>+ เพิ่มข้อสอบข้อนี้</button>
+                      </div>
+
+                      <div style={{marginTop: '20px'}}>
+                          <button type="submit" className="btn btn-primary" style={{width: '100%'}}>
+                              {isEditing ? '💾 บันทึกการแก้ไข' : '💾 บันทึกคอร์สเรียน'}
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
       )}
 
       <div className="main-container">
@@ -302,11 +399,11 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
                     <tr>
                       <th className="sticky-col" style={{minWidth: '250px'}}>รายชื่อพนักงาน ({filteredEmployees.length})</th>
                       {allCourses.map(c => (
-                        <th key={c.id} title={c.title} style={{textAlign:'center', minWidth:'80px', cursor: 'help'}}>
-                          <div style={{display:'flex', flexDirection:'column', alignItems:'center'}}>
+                        <th key={c.id} title={c.title} style={{textAlign:'center', minWidth:'80px', cursor:'help'}}>
+                           <div style={{display:'flex', flexDirection:'column', alignItems:'center'}}>
                               <span style={{fontSize:'1.5rem'}}>{c.icon || '📺'}</span>
                               <span style={{fontSize:'0.75rem', color:'#64748b'}}>{c.id}</span>
-                          </div>
+                           </div>
                         </th>
                       ))}
                       <th style={{textAlign:'center', minWidth:'80px'}}>Action</th>
@@ -322,53 +419,30 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
                           <div style={{fontSize:'0.75rem', color: emp.role === 'contractor' ? '#d97706' : '#94a3b8'}}>
                               {emp.role === 'contractor' ? `ผู้รับเหมา: ${emp.company || '-'}` : `ID: ${emp.id}`}
                           </div>
-                          <div style={{fontSize:'0.7rem', color:'#cbd5e1'}}>
-                              {emp.lastSeen === '-' ? '' : `เข้าล่าสุด: ${emp.lastSeen}`}
-                          </div>
                         </td>
                         {allCourses.map(c => {
                             const p = emp.progress?.[c.id];
-                            // 🔥 ฟังก์ชันแปลงวันที่ (ปรับปรุงให้รองรับค่าว่าง)
                             const getThaiDate = (dateString) => {
                                 if (!dateString) return "ไม่ระบุวันที่"; 
                                 try {
                                     const date = new Date(dateString);
                                     if (isNaN(date.getTime())) return "วันที่ไม่ถูกต้อง";
-                                    return date.toLocaleDateString('th-TH', {
-                                        day: 'numeric', month: 'short', year: '2-digit',
-                                        hour: '2-digit', minute: '2-digit', hour12: false
-                                    });
-                                } catch (e) { return "Error Date"; }
+                                    return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+                                } catch (e) { return "Error"; }
                             };
-                            
-                            let tooltipText = "";
-                            if (!p) {
-                                tooltipText = `วิชา ${c.id}: ยังไม่เริ่มเรียน`;
-                            } else if (p.isCompleted) {
-                                tooltipText = `✅ ผ่านแล้ว\n📅 เมื่อ: ${getThaiDate(p.lastUpdated)}`;
-                            } else {
-                                tooltipText = `🟡 กำลังเรียน (ได้ ${Math.floor(p.lastWatched || 0)} วินาที)\n📅 ล่าสุด: ${getThaiDate(p.lastUpdated)}`;
-                            }
+                            let tooltipText = !p ? `ยังไม่เริ่ม` : p.isCompleted ? `✅ ผ่านแล้ว\n${getThaiDate(p.lastUpdated)}` : `🟡 กำลังเรียน\n${getThaiDate(p.lastUpdated)}`;
                             return (
                                 <td key={c.id}>
                                     <div className="status-cell">
-                                        {!p ? (
-                                          <div className="badge-dot badge-none" title={tooltipText}></div>
-                                        ) : p.isCompleted ? (
-                                          <div title={tooltipText} style={{color:'#10b981', display:'flex', alignItems:'center', justifyContent:'center', cursor:'help', width:'100%', height:'100%'}}>
-                                              <span style={{fontSize:'1.2rem', fontWeight:'bold'}}>✓</span>
-                                          </div>
-                                        ) : (
-                                          <div className="badge-dot badge-learning" title={tooltipText} style={{cursor:'help'}}></div>
-                                        )}
+                                        {!p ? <div className="badge-dot badge-none" title={tooltipText}></div> 
+                                        : p.isCompleted ? <div title={tooltipText} style={{color:'#10b981'}}>✓</div> 
+                                        : <div className="badge-dot badge-learning" title={tooltipText}></div>}
                                     </div>
                                 </td>
                             )
                         })}
                         <td>
-                          <button className="btn-reset" onClick={() => confirmReset(emp.id, emp.name)} title="รีเซ็ตผลการเรียน">
-                            🔄
-                          </button>
+                          <button className="btn-reset" onClick={() => confirmReset(emp.id, emp.name)} title="รีเซ็ตผลการเรียน">🔄</button>
                         </td>
                       </tr>
                     ))}
@@ -380,25 +454,18 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
 
         {/* --- TAB 2: MANAGE EMPLOYEES --- */}
         {activeTab === 'manage' && (
-          <div className="manage-grid">
-              <div className="card" style={{height:'fit-content'}}>
-                  <h3>➕ เพิ่มพนักงาน</h3>
-                  <form onSubmit={handleAddEmployee}>
-                      <div style={{marginBottom:'10px'}}>
-                          <label>รหัสพนักงาน</label>
-                          <input className="input-field" value={newEmpId} onChange={e => setNewEmpId(e.target.value)} required />
-                      </div>
-                      <div style={{marginBottom:'15px'}}>
-                          <label>ชื่อ-นามสกุล</label>
-                          <input className="input-field" value={newEmpName} onChange={e => setNewEmpName(e.target.value)} required />
-                      </div>
-                      <button type="submit" className="btn btn-primary" style={{width:'100%'}}>บันทึก</button>
-                  </form>
-              </div>
+          <div style={{maxWidth: '800px', margin: '0 auto'}}>
+              {/* 🔥 ปุ่มเปิด Popup แทนฟอร์มเดิม */}
+              <button className="btn-add-trigger" onClick={() => setShowEmpModal(true)}>
+                ➕ เพิ่มพนักงาน / ผู้ใช้งานใหม่
+              </button>
+
               <div className="card">
-                  <h3>🗑️ รายชื่อในระบบ</h3>
-                  <input className="input-field" placeholder="ค้นหา..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                  <div style={{maxHeight:'500px', overflowY:'auto', marginTop:'10px'}}>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'15px'}}>
+                    <h3>🗑️ รายชื่อในระบบ</h3>
+                    <input className="input-field" style={{width:'200px', margin:0}} placeholder="ค้นหา..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  </div>
+                  <div style={{maxHeight:'500px', overflowY:'auto'}}>
                     <table style={{width:'100%'}}>
                         <thead><tr style={{textAlign:'left'}}><th>รหัส</th><th>ชื่อ</th><th>ลบ</th></tr></thead>
                         <tbody>
@@ -418,86 +485,21 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
 
         {/* --- TAB 3: MANAGE COURSES --- */}
         {activeTab === 'courses' && (
-            // ✅ เอา style ออก แล้วให้ CSS ใน App.css จัดการแทน
-            <div className="manage-grid">
-              <div className="sticky-form-card">
-                <h3 style={{color: isEditing ? '#f59e0b' : '#333', marginTop: 0}}>
-                  {isEditing ? `✏️ แก้ไขวิชา: ${newCourse.id}` : '➕ เพิ่มหลักสูตรใหม่'}
-                </h3>
-                  
-                  <form onSubmit={handleSaveCourse}>
-                      {/* ... (เนื้อหาฟอร์มเหมือนเดิมทุกอย่าง) ... */}
-                      <div style={{display:'flex', flexWrap: 'wrap', gap:'10px'}}>
-                        <div style={{flex: '1 1 150px'}}>
-                          <label>รหัสวิชา</label>
-                          <input className="input-field" value={newCourse.id} onChange={e => setNewCourse({...newCourse, id: e.target.value})} required disabled={isEditing} />
-                        </div>
-                        <div style={{flex: '1 1 150px'}}>
-                          <label>หมวดหมู่</label>
-                          <input className="input-field" value={newCourse.category} onChange={e => setNewCourse({...newCourse, category: e.target.value})} required />
-                        </div>
-                      </div>
-                      <div style={{marginTop:'10px'}}>
-                          <label>ชื่อวิชา</label>
-                          <input className="input-field" value={newCourse.title} onChange={e => setNewCourse({...newCourse, title: e.target.value})} required />
-                      </div>
-                      <div style={{marginTop:'10px'}}>
-                          <label>YouTube URL</label>
-                          <input className="input-field" value={newCourse.url} onChange={e => setNewCourse({...newCourse, url: e.target.value})} required />
-                      </div>
-                      <div style={{marginTop:'10px', marginBottom:'20px'}}>
-                          <label>ความยาว (นาที)</label>
-                          <input className="input-field" value={newCourse.duration} onChange={e => setNewCourse({...newCourse, duration: e.target.value})} required placeholder="Ex. 15 นาที" />
-                      </div>
+            <div style={{width:'100%'}}>
+              {/* 🔥 ปุ่มเปิด Popup แทนฟอร์มเดิม */}
+              <button className="btn-add-trigger" onClick={() => {
+                  setIsEditing(false);
+                  setNewCourse({ id: '', title: '', category: 'ทั่วไป', icon: '📺', url: '', duration: '' });
+                  setQuizQuestions([]);
+                  setShowCourseModal(true);
+              }}>
+                ➕ เพิ่มหลักสูตร / วิชาใหม่
+              </button>
 
-                      {/* Quiz Builder */}
-                      <div style={{borderTop:'1px solid #eee', paddingTop:'15px'}}>
-                          <h4>📝 สร้างข้อสอบ ({quizQuestions.length} ข้อ)</h4>
-                          
-                          {quizQuestions.length > 0 && (
-                              <div style={{background:'#f9fafb', padding:'10px', borderRadius:'8px', marginBottom:'15px', maxHeight:'200px', overflowY:'auto'}}>
-                                  {quizQuestions.map((q, i) => (
-                                      <div key={i} style={{fontSize:'0.85rem', marginBottom:'5px', borderBottom:'1px solid #eee', paddingBottom:'5px', position:'relative'}}>
-                                          <b>{i+1}. {q.question}</b> <br/>
-                                          <span style={{color:'#10b981'}}>เฉลย: {q.options[q.answer]}</span>
-                                          <button type="button" onClick={() => removeQuestion(i)} style={{position:'absolute', right:0, top:0, border:'none', background:'none', color:'red', cursor:'pointer'}}>🗑️</button>
-                                      </div>
-                                  ))}
-                              </div>
-                          )}
-
-                          <div style={{background:'#f0f9ff', padding:'10px', borderRadius:'8px', border:'1px dashed #bae6fd'}}>
-                              <input placeholder="โจทย์คำถาม..." value={tempQ.question} onChange={e=>setTempQ({...tempQ, question: e.target.value})} className="input-field" style={{marginBottom:'5px'}} />
-                              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'5px'}}>
-                                  {tempQ.options.map((opt, idx) => (
-                                      <div key={idx} style={{display:'flex', alignItems:'center', background:'white', borderRadius:'4px', padding:'0 5px'}}>
-                                          <input type="radio" name="correct" checked={tempQ.answer === idx} onChange={()=>setTempQ({...tempQ, answer: idx})} style={{marginRight:'5px'}} />
-                                          <input placeholder={`ตัวเลือก ${idx+1}`} value={opt} onChange={e=>{
-                                              const newOpts = [...tempQ.options];
-                                              newOpts[idx] = e.target.value;
-                                              setTempQ({...tempQ, options: newOpts});
-                                          }} style={{border:'none', width:'100%', outline:'none', fontSize:'0.85rem'}} />
-                                      </div>
-                                  ))}
-                              </div>
-                              <button type="button" onClick={addQuestion} className="btn" style={{marginTop:'10px', width:'100%', background:'#0ea5e9', color:'white', fontSize:'0.8rem'}}>+ เพิ่มข้อนี้</button>
-                          </div>
-                      </div>
-
-                      <div style={{marginTop: '20px'}}>
-                          <button type="submit" className="btn btn-primary" style={{width: '100%', background: isEditing ? '#f59e0b' : '#4f46e5'}}>
-                              {isEditing ? '💾 บันทึกการแก้ไข' : '💾 บันทึกคอร์สเรียน'}
-                          </button>
-                      </div>
-                  </form>
-              </div>
-
-              {/* 2. Course List Table */}
-              <div className="table-card-container">
-                <div className="card" style={{margin: 0}}>
+              <div className="card" style={{margin: 0}}>
                   <h3>🎬 รายชื่อวิชาทั้งหมด</h3>
                   <div className="table-wrapper">
-                    <table style={{width: '100%', minWidth: '600px'}}> {/* กำหนด minWidth ตารางเพื่อกันตัวอักษรซ้อนกัน */}
+                    <table style={{width: '100%', minWidth: '600px'}}>
                       <thead>
                         <tr>
                           <th>ชื่อวิชา</th>
@@ -511,35 +513,29 @@ const Dashboard = ({ user, activeTab: initialTab, onSelectCourse, onLogout }) =>
                             {allCourses.map(course => {
                                const roles = course.allowedRoles || ['staff', 'contractor'];
                                return (
-                                   <tr key={course.id} style={{background: isEditing && newCourse.id === course.id ? '#fff7ed' : 'white'}}>
-                                       <td className="sticky-col">
-                                           <div style={{fontWeight:'bold', fontSize:'0.9rem'}}>{course.title}</div>
-                                           <div style={{fontSize:'0.75rem', color:'#64748b'}}>
-                                               {course.id} {course.questions?.length > 0 && <span style={{color:'#e11d48', marginLeft:'5px'}}>({course.questions.length} ข้อ)</span>}
-                                           </div>
-                                       </td>
-                                       <td>{course.category}</td>
-                                       <td style={{textAlign:'center'}}><input type="checkbox" checked={roles.includes('staff')} onChange={() => toggleCourseRole(course.id, 'staff')} /></td>
-                                       <td style={{textAlign:'center'}}><input type="checkbox" checked={roles.includes('contractor')} onChange={() => toggleCourseRole(course.id, 'contractor')} /></td>
-                                       
-                                       <td style={{textAlign:'center'}}>
-                                           <div style={{display:'flex', gap:'5px', justifyContent:'center'}}>
-                                               {/* ปุ่ม Edit */}
-                                               <button onClick={() => startEditCourse(course)} style={{background:'#f3f4f6', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>✏️</button>
-                                               {/* ปุ่ม Delete */}
-                                               <button onClick={() => confirmDeleteCourse(course.id, course.title)} style={{background:'#fee2e2', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>🗑️</button>
-                                           </div>
-                                       </td>
+                                   <tr key={course.id}>
+                                        <td className="sticky-col">
+                                            <div style={{fontWeight:'bold', fontSize:'0.9rem'}}>{course.title}</div>
+                                            <div style={{fontSize:'0.75rem', color:'#64748b'}}>{course.id} {course.questions?.length > 0 && <span style={{color:'#e11d48'}}>({course.questions.length} ข้อ)</span>}</div>
+                                        </td>
+                                        <td>{course.category}</td>
+                                        <td style={{textAlign:'center'}}><input type="checkbox" checked={roles.includes('staff')} onChange={() => toggleCourseRole(course.id, 'staff')} /></td>
+                                        <td style={{textAlign:'center'}}><input type="checkbox" checked={roles.includes('contractor')} onChange={() => toggleCourseRole(course.id, 'contractor')} /></td>
+                                        <td style={{textAlign:'center'}}>
+                                            <div style={{display:'flex', gap:'5px', justifyContent:'center'}}>
+                                                <button onClick={() => startEditCourse(course)} style={{background:'#f3f4f6', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>✏️</button>
+                                                <button onClick={() => confirmDeleteCourse(course.id, course.title)} style={{background:'#fee2e2', border:'none', borderRadius:'4px', cursor:'pointer', padding:'4px'}}>🗑️</button>
+                                            </div>
+                                        </td>
                                    </tr>
                                );
-                           })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                            })}
+                        </tbody>
+                    </table>
+                  </div>
+              </div>
             </div>
-          )}
+        )}
 
       </div>
     </div>

@@ -1,9 +1,7 @@
-// src/Login.jsx
 import React, { useState } from 'react';
 import './App.css';
 
 const Login = ({ onLogin }) => {
-  // state สลับโหมด
   const [userType, setUserType] = useState('staff'); // 'staff' | 'contractor'
 
   // form state
@@ -20,8 +18,8 @@ const Login = ({ onLogin }) => {
     e.preventDefault();
     setError('');
 
-    // 1. ล็อกอินแบบพนักงาน
     if (userType === 'staff') {
+        if (!empId.trim()) { setError('กรุณากรอกรหัสพนักงาน'); return; }
         try {
             const res = await fetch('https://training-api-pvak.onrender.com/api/login', {
                 method: 'POST',
@@ -33,8 +31,6 @@ const Login = ({ onLogin }) => {
             else setError(data.message);
         } catch (err) { setError('เชื่อมต่อ Server ไม่ได้'); }
     } 
-    
-    // 2. ลงทะเบียน/เข้าเรียน แบบผู้รับเหมา
     else {
         if(!conName || !conIdCard || !conCompany) {
             setError('กรุณากรอกข้อมูลให้ครบทุกช่อง');
@@ -54,38 +50,26 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f8fafc' }}>
-      <div className="card" style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
+    <div className="login-container">
+      <div className="login-card">
         
-        <div style={{textAlign:'center', marginBottom:'1.5rem'}}>
-            <div style={{fontSize:'3rem', marginBottom:'10px'}}>🏭</div>
-            <h2 style={{margin:0, color:'#1e293b'}}>Safety Training</h2>
-            <p style={{color:'#64748b'}}>ระบบอบรมความปลอดภัย</p>
+        <div className="login-header">
+            <div className="login-icon-box">🏭</div>
+            <h2 className="login-title">Safety Training</h2>
+            <p className="login-subtitle">ระบบอบรมความปลอดภัยออนไลน์</p>
         </div>
 
-        {/* Tab Switcher */}
-        <div style={{display:'flex', background:'#f1f5f9', padding:'4px', borderRadius:'8px', marginBottom:'20px'}}>
+        {/* Tab Switcher Styled */}
+        <div className="login-tabs">
             <button 
                 onClick={() => { setUserType('staff'); setError(''); }}
-                style={{
-                    flex:1, padding:'8px', borderRadius:'6px', border:'none', cursor:'pointer', fontWeight:'bold',
-                    background: userType === 'staff' ? 'white' : 'transparent',
-                    color: userType === 'staff' ? '#4f46e5' : '#64748b',
-                    boxShadow: userType === 'staff' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                    transition: 'all 0.2s'
-                }}
+                className={`login-tab-btn ${userType === 'staff' ? 'active' : ''}`}
             >
                 พนักงานประจำ
             </button>
             <button 
                 onClick={() => { setUserType('contractor'); setError(''); }}
-                style={{
-                    flex:1, padding:'8px', borderRadius:'6px', border:'none', cursor:'pointer', fontWeight:'bold',
-                    background: userType === 'contractor' ? 'white' : 'transparent',
-                    color: userType === 'contractor' ? '#f59e0b' : '#64748b',
-                    boxShadow: userType === 'contractor' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                    transition: 'all 0.2s'
-                }}
+                className={`login-tab-btn ${userType === 'contractor' ? 'active' : ''}`}
             >
                 ผู้รับเหมา
             </button>
@@ -95,10 +79,10 @@ const Login = ({ onLogin }) => {
           
           {/* ฟอร์มพนักงาน */}
           {userType === 'staff' && (
-              <div style={{marginBottom:'15px'}}>
-                <label style={{display:'block', marginBottom:'5px', fontWeight:'600', color:'#334155'}}>รหัสพนักงาน</label>
+              <div style={{marginBottom:'20px'}}>
+                <label className="login-form-label">รหัสพนักงาน</label>
                 <input 
-                    type="text" className="input-field" placeholder="กรอกรหัสพนักงาน..." autoFocus
+                    type="text" className="input-field" placeholder="Ex. EMP001" autoFocus
                     value={empId} onChange={(e) => setEmpId(e.target.value)} 
                 />
               </div>
@@ -108,23 +92,23 @@ const Login = ({ onLogin }) => {
           {userType === 'contractor' && (
               <>
                 <div style={{marginBottom:'15px'}}>
-                    <label style={{display:'block', marginBottom:'5px', fontWeight:'600', color:'#334155'}}>ชื่อ-นามสกุล</label>
+                    <label className="login-form-label">ชื่อ-นามสกุล</label>
                     <input type="text" className="input-field" placeholder="ชื่อจริง นามสกุล" value={conName} onChange={e=>setConName(e.target.value)} />
                 </div>
                 <div style={{marginBottom:'15px'}}>
-                    <label style={{display:'block', marginBottom:'5px', fontWeight:'600', color:'#334155'}}>เลขบัตรประชาชน / Passport</label>
-                    <input type="text" className="input-field" placeholder="ใช้สำหรับอ้างอิง" value={conIdCard} onChange={e=>setConIdCard(e.target.value)} />
+                    <label className="login-form-label">เลขบัตรประชาชน / Passport</label>
+                    <input type="text" className="input-field" placeholder="สำหรับอ้างอิงตัวบุคคล" value={conIdCard} onChange={e=>setConIdCard(e.target.value)} />
                 </div>
-                <div style={{marginBottom:'15px'}}>
-                    <label style={{display:'block', marginBottom:'5px', fontWeight:'600', color:'#334155'}}>บริษัท (สังกัด)</label>
+                <div style={{marginBottom:'20px'}}>
+                    <label className="login-form-label">บริษัท (สังกัด)</label>
                     <input type="text" className="input-field" placeholder="ชื่อบริษัทผู้รับเหมา" value={conCompany} onChange={e=>setConCompany(e.target.value)} />
                 </div>
               </>
           )}
 
-          {error && <div style={{color:'#ef4444', marginBottom:'15px', fontSize:'0.9rem', textAlign:'center'}}>⚠️ {error}</div>}
+          {error && <div className="login-error">⚠️ {error}</div>}
           
-          <button type="submit" className="btn btn-primary" style={{width:'100%', padding:'12px', fontSize:'1rem'}}>
+          <button type="submit" className="btn btn-primary login-btn">
             {userType === 'staff' ? 'เข้าสู่ระบบ' : 'ลงทะเบียนเข้าอบรม'}
           </button>
 

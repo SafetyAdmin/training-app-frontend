@@ -82,7 +82,7 @@ const Login = ({ onLogin }) => {
               <div style={{marginBottom:'20px'}}>
                 <label className="login-form-label">รหัสพนักงาน</label>
                 <input 
-                    type="text" className="input-field" placeholder="Ex. EMP001" autoFocus
+                    type="text" className="input-field" placeholder="AM,CO,PR....." autoFocus
                     value={empId} onChange={(e) => setEmpId(e.target.value)} 
                 />
               </div>
